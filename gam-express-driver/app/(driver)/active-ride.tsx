@@ -1,0 +1,628 @@
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Linking,
+  Alert,
+  ScrollView,
+  Modal,
+} from 'react-native';
+import { useEffect, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
+import { router } from 'expo-router';
+import { supabase } from '../../lib/supabase';
+import { useDriverStore } from '../../store/driverStore';
+import type { BookingStatus } from '../../lib/supabase';
+
+type StatusConfig = {
+  btnLabel: string;
+  nextStatus: BookingStatus;
+  btnColor: string;
+};
+
+const STATUS_FLOW: Partial<Record<BookingStatus, StatusConfig>> = {
+  accepted: {
+    btnLabel: "I'VE ARRIVED",
+    nextStatus: 'arrived',
+    btnColor: '#F5C518',
+  },
+  arrived: {
+    btnLabel: 'START TRIP',
+    nextStatus: 'en_route',
+    btnColor: '#3B82F6',
+  },
+  en_route: {
+    btnLabel: 'COMPLETE TRIP',
+    nextStatus: 'completed',
+    btnColor: '#22C55E',
+  },
+};
+
+export default function ActiveRideScreen() {
+  const activeBooking = useDriverStore((s) => s.activeBooking);
+  const setActiveBooking = useDriverStore((s) => s.setActiveBooking);
+  const driver = useDriverStore((s) => s.driver);
+  const setEarningsToday = useDriverStore((s) => s.setEarningsToday);
+  const setTripsToday = useDriverStore((s) => s.setTripsToday);
+  const earningsToday = useDriverStore((s) => s.earningsToday);
+  const tripsToday = useDriverStore((s) => s.tripsToday);
+
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [showCompletionSheet, setShowCompletionSheet] = useState(false);
+
+  // Subscribe to real-time cancellation by admin/customer
+  useEffect(() => {
+    if (!activeBooking) return;
+
+    const channel = supabase
+      .channel(`booking-${activeBooking.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bookings',
+          filter: `id=eq.${activeBooking.id}`,
+        },
+        (payload) => {
+          const updated = payload.new;
+          if (updated.status === 'cancelled') {
+            Alert.alert(
+              'Ride Cancelled',
+              'This ride has been cancelled.',
+              [{ text: 'OK', onPress: () => { setActiveBooking(null); router.replace('/(driver)/home'); } }]
+            );
+          } else {
+            setActiveBooking({ ...activeBooking, ...updated });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeBooking?.id]);
+
+  async function advanceStatus() {
+    if (!activeBooking || !driver) return;
+    const config = STATUS_FLOW[activeBooking.status];
+    if (!config) return;
+
+    setUpdatingStatus(true);
+    try {
+      const updatePayload: Record<string, unknown> = {
+        status: config.nextStatus,
+      };
+
+      if (config.nextStatus === 'completed') {
+        updatePayload.completed_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('bookings')
+        .update(updatePayload)
+        .eq('id', activeBooking.id);
+
+      if (error) throw error;
+
+      const updatedBooking = { ...activeBooking, status: config.nextStatus as BookingStatus };
+      setActiveBooking(updatedBooking);
+
+      if (config.nextStatus === 'completed') {
+        const fare = activeBooking.estimated_fare ?? 0;
+        setEarningsToday(earningsToday + fare);
+        setTripsToday(tripsToday + 1);
+        setShowCompletionSheet(true);
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'Could not update ride status.');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  }
+
+  function openPhone() {
+    if (!activeBooking?.customer_phone) return;
+    Linking.openURL(`tel:${activeBooking.customer_phone}`);
+  }
+
+  function openWhatsApp() {
+    if (!activeBooking?.customer_phone) return;
+    const digits = activeBooking.customer_phone.replace(/\D/g, '');
+    Linking.openURL(`https://wa.me/${digits}`);
+  }
+
+  function handleCompletionDone() {
+    setShowCompletionSheet(false);
+    setActiveBooking(null);
+    router.replace('/(driver)/home');
+  }
+
+  if (!activeBooking) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>No active ride.</Text>
+          <Pressable onPress={() => router.replace('/(driver)/home')} style={styles.backBtn}>
+            <Text style={styles.backBtnText}>Back to Home</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const statusConfig = STATUS_FLOW[activeBooking.status];
+
+  const hasCoords =
+    activeBooking.pickup_lat !== null &&
+    activeBooking.pickup_lng !== null;
+
+  const mapRegion = hasCoords
+    ? {
+        latitude: activeBooking.pickup_lat!,
+        longitude: activeBooking.pickup_lng!,
+        latitudeDelta: 0.04,
+        longitudeDelta: 0.04,
+      }
+    : {
+        // Banjul, Gambia default
+        latitude: 13.4549,
+        longitude: -16.5790,
+        latitudeDelta: 0.08,
+        longitudeDelta: 0.08,
+      };
+
+  const statusLabels: Record<BookingStatus, string> = {
+    pending: 'Pending',
+    accepted: 'Heading to Pickup',
+    arrived: 'At Pickup — Waiting',
+    en_route: 'En Route to Dropoff',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* Map */}
+      <View style={styles.mapContainer}>
+        <MapView
+          style={styles.map}
+          provider={PROVIDER_DEFAULT}
+          initialRegion={mapRegion}
+          showsUserLocation
+          showsMyLocationButton={false}
+        >
+          {/* Pickup marker */}
+          {activeBooking.pickup_lat && activeBooking.pickup_lng && (
+            <Marker
+              coordinate={{
+                latitude: activeBooking.pickup_lat,
+                longitude: activeBooking.pickup_lng,
+              }}
+              title="Pickup"
+              description={activeBooking.pickup_address ?? ''}
+              pinColor="#22C55E"
+            />
+          )}
+
+          {/* Dropoff marker */}
+          {activeBooking.dropoff_lat && activeBooking.dropoff_lng && (
+            <Marker
+              coordinate={{
+                latitude: activeBooking.dropoff_lat,
+                longitude: activeBooking.dropoff_lng,
+              }}
+              title="Dropoff"
+              description={activeBooking.dropoff_address ?? ''}
+              pinColor="#EF4444"
+            />
+          )}
+
+          {/* Simple straight line — good enough for low-end devices */}
+          {activeBooking.pickup_lat &&
+            activeBooking.pickup_lng &&
+            activeBooking.dropoff_lat &&
+            activeBooking.dropoff_lng && (
+              <Polyline
+                coordinates={[
+                  { latitude: activeBooking.pickup_lat, longitude: activeBooking.pickup_lng },
+                  { latitude: activeBooking.dropoff_lat, longitude: activeBooking.dropoff_lng },
+                ]}
+                strokeColor="#F5C518"
+                strokeWidth={3}
+                lineDashPattern={[8, 4]}
+              />
+            )}
+        </MapView>
+
+        {/* Status pill overlay */}
+        <View style={styles.statusPill}>
+          <Text style={styles.statusPillText}>{statusLabels[activeBooking.status]}</Text>
+        </View>
+      </View>
+
+      {/* Bottom info panel */}
+      <ScrollView
+        style={styles.panel}
+        contentContainerStyle={styles.panelContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Customer card */}
+        <View style={styles.customerCard}>
+          <View style={styles.customerInfo}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarEmoji}>👤</Text>
+            </View>
+            <View>
+              <Text style={styles.customerName}>
+                {activeBooking.customer_name ?? 'Customer'}
+              </Text>
+              <Text style={styles.customerPhone}>
+                {activeBooking.customer_phone ?? 'No phone provided'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.contactBtns}>
+            <Pressable
+              style={({ pressed }) => [styles.contactBtn, styles.callBtn, pressed && { opacity: 0.8 }]}
+              onPress={openPhone}
+            >
+              <Text style={styles.contactBtnText}>📞 Call</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.contactBtn, styles.whatsappBtn, pressed && { opacity: 0.8 }]}
+              onPress={openWhatsApp}
+            >
+              <Text style={styles.contactBtnText}>💬 WhatsApp</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Route summary */}
+        <View style={styles.routeCard}>
+          <View style={styles.routeRow}>
+            <View style={[styles.routeDot, { backgroundColor: '#22C55E' }]} />
+            <View style={styles.routeText}>
+              <Text style={styles.routeLabel}>PICKUP</Text>
+              <Text style={styles.routeAddress}>
+                {activeBooking.pickup_address ?? 'Location on map'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.routeLine} />
+          <View style={styles.routeRow}>
+            <View style={[styles.routeDot, { backgroundColor: '#EF4444' }]} />
+            <View style={styles.routeText}>
+              <Text style={styles.routeLabel}>DROPOFF</Text>
+              <Text style={styles.routeAddress}>
+                {activeBooking.dropoff_address ?? 'Location on map'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Fare + payment */}
+        <View style={styles.fareRow}>
+          <View>
+            <Text style={styles.fareLabel}>Estimated Fare</Text>
+            <Text style={styles.fareValue}>
+              {activeBooking.estimated_fare ? `D ${activeBooking.estimated_fare}` : 'Agree on pickup'}
+            </Text>
+          </View>
+          <View style={styles.paymentBadge}>
+            <Text style={styles.paymentBadgeText}>
+              {activeBooking.payment_method === 'mobile_money' ? '📱 Mobile Money' : '💵 Cash'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Action button */}
+        {statusConfig && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.actionBtn,
+              { backgroundColor: statusConfig.btnColor },
+              pressed && { opacity: 0.88 },
+              updatingStatus && { opacity: 0.6 },
+            ]}
+            onPress={advanceStatus}
+            disabled={updatingStatus}
+          >
+            <Text style={styles.actionBtnText}>{statusConfig.btnLabel}</Text>
+          </Pressable>
+        )}
+      </ScrollView>
+
+      {/* Trip Completion Sheet */}
+      <Modal transparent visible={showCompletionSheet} animationType="slide">
+        <View style={styles.completionOverlay}>
+          <View style={styles.completionSheet}>
+            <Text style={styles.completionEmoji}>🎉</Text>
+            <Text style={styles.completionTitle}>Trip Complete!</Text>
+            <Text style={styles.completionFare}>
+              {activeBooking.estimated_fare ? `D ${activeBooking.estimated_fare}` : 'Collect fare'}
+            </Text>
+            <Text style={styles.completionFareLabel}>
+              {activeBooking.payment_method === 'mobile_money'
+                ? 'Collect via Mobile Money'
+                : 'Collect Cash from Passenger'}
+            </Text>
+            <Text style={styles.completionStats}>
+              Today: {tripsToday} trips · D {earningsToday.toFixed(0)} earned
+            </Text>
+            <Pressable
+              style={({ pressed }) => [styles.completionBtn, pressed && { opacity: 0.88 }]}
+              onPress={handleCompletionDone}
+            >
+              <Text style={styles.completionBtnText}>DONE — BACK TO HOME</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#0F0F1A',
+  },
+  mapContainer: {
+    height: 280,
+    position: 'relative',
+  },
+  map: {
+    flex: 1,
+  },
+  statusPill: {
+    position: 'absolute',
+    top: 12,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(26,26,46,0.92)',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#F5C518',
+  },
+  statusPillText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 13,
+    color: '#F5C518',
+  },
+  panel: {
+    flex: 1,
+    backgroundColor: '#0F0F1A',
+  },
+  panelContent: {
+    padding: 20,
+    gap: 16,
+    paddingBottom: 32,
+  },
+  customerCard: {
+    backgroundColor: '#1A1A2E',
+    borderRadius: 16,
+    padding: 16,
+    gap: 14,
+    borderWidth: 1,
+    borderColor: '#2D2D44',
+  },
+  customerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  avatarCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#2D2D44',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarEmoji: {
+    fontSize: 24,
+  },
+  customerName: {
+    fontFamily: 'Urbanist_700Bold',
+    fontSize: 18,
+    color: '#FFFFFF',
+  },
+  customerPhone: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  contactBtns: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  contactBtn: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  callBtn: {
+    backgroundColor: '#1E3A5F',
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+  },
+  whatsappBtn: {
+    backgroundColor: '#1A3A25',
+    borderWidth: 1,
+    borderColor: '#22C55E',
+  },
+  contactBtnText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 14,
+    color: '#FFFFFF',
+  },
+  routeCard: {
+    backgroundColor: '#1A1A2E',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#2D2D44',
+  },
+  routeRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  routeDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginTop: 14,
+  },
+  routeLine: {
+    width: 2,
+    height: 16,
+    backgroundColor: '#2D2D44',
+    marginLeft: 5,
+    marginVertical: 2,
+  },
+  routeText: {
+    flex: 1,
+  },
+  routeLabel: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 10,
+    color: '#6B7280',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  routeAddress: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    color: '#FFFFFF',
+    lineHeight: 20,
+  },
+  fareRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  fareLabel: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  fareValue: {
+    fontFamily: 'Urbanist_700Bold',
+    fontSize: 26,
+    color: '#F5C518',
+    marginTop: 2,
+  },
+  paymentBadge: {
+    backgroundColor: 'rgba(245,197,24,0.1)',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(245,197,24,0.25)',
+  },
+  paymentBadgeText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 13,
+    color: '#F5C518',
+  },
+  actionBtn: {
+    borderRadius: 14,
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  actionBtnText: {
+    fontFamily: 'Urbanist_700Bold',
+    fontSize: 18,
+    color: '#FFFFFF',
+    letterSpacing: 1.5,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  emptyText: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 16,
+    color: '#9CA3AF',
+  },
+  backBtn: {
+    backgroundColor: '#F5C518',
+    borderRadius: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  backBtnText: {
+    fontFamily: 'Urbanist_700Bold',
+    fontSize: 16,
+    color: '#1A1A2E',
+  },
+  // Completion sheet
+  completionOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+  },
+  completionSheet: {
+    backgroundColor: '#1A1A2E',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 32,
+    paddingBottom: 48,
+    alignItems: 'center',
+    gap: 10,
+    borderTopWidth: 2,
+    borderTopColor: '#22C55E',
+  },
+  completionEmoji: {
+    fontSize: 56,
+  },
+  completionTitle: {
+    fontFamily: 'Urbanist_700Bold',
+    fontSize: 28,
+    color: '#FFFFFF',
+  },
+  completionFare: {
+    fontFamily: 'Urbanist_700Bold',
+    fontSize: 40,
+    color: '#F5C518',
+    marginTop: 4,
+  },
+  completionFareLabel: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 15,
+    color: '#9CA3AF',
+    textAlign: 'center',
+  },
+  completionStats: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 8,
+  },
+  completionBtn: {
+    backgroundColor: '#22C55E',
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    marginTop: 16,
+    width: '100%',
+    alignItems: 'center',
+  },
+  completionBtnText: {
+    fontFamily: 'Urbanist_700Bold',
+    fontSize: 16,
+    color: '#FFFFFF',
+    letterSpacing: 1,
+  },
+});

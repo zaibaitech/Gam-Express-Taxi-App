@@ -1,0 +1,28 @@
+{
+  "name": "Gam Express Taxi - Simple, Safe & Reliable",
+  "short_name": "Gam Express",
+  "description": "Book your taxi quickly and safely in The Gambia. Fast booking, trusted drivers, mobile money accepted.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5e9",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "transportation", "navigation"],
+  "lang": "en-GB",
+  "dir": "ltr",
+  "prefer_related_applications": false
+}

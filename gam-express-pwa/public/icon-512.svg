@@ -1,0 +1,31 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" rx="100" fill="url(#gradient)"/>
+  
+  <!-- Taxi Icon -->
+  <g transform="translate(100, 150)">
+    <!-- Car Body -->
+    <rect x="40" y="80" width="240" height="120" rx="20" fill="white"/>
+    <rect x="60" y="60" width="200" height="80" rx="15" fill="#f59e0b"/>
+    
+    <!-- Windows -->
+    <rect x="80" y="70" width="80" height="50" rx="8" fill="#0ea5e9"/>
+    <rect x="180" y="70" width="60" height="50" rx="8" fill="#0ea5e9"/>
+    
+    <!-- Wheels -->
+    <circle cx="100" cy="200" r="30" fill="#1f2937"/>
+    <circle cx="100" cy="200" r="18" fill="#4b5563"/>
+    <circle cx="220" cy="200" r="30" fill="#1f2937"/>
+    <circle cx="220" cy="200" r="18" fill="#4b5563"/>
+    
+    <!-- Taxi Light -->
+    <rect x="140" y="40" width="40" height="20" rx="10" fill="#f59e0b"/>
+  </g>
+  
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="512" y2="512">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+  </defs>
+</svg>
