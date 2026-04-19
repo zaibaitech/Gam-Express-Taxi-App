@@ -101,12 +101,16 @@ export default function ActiveRideScreen() {
         updatePayload.completed_at = new Date().toISOString();
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('bookings')
         .update(updatePayload)
-        .eq('id', activeBooking.id);
+        .eq('id', activeBooking.id)
+        .select('*')
+        .single();
 
-      if (error) throw error;
+      if (error || !data) {
+        throw error ?? new Error('Could not update ride status.');
+      }
 
       const updatedBooking = { ...activeBooking, status: config.nextStatus as BookingStatus };
       setActiveBooking(updatedBooking);

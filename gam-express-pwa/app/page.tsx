@@ -5,10 +5,24 @@ import HeroSection from '@/components/home/HeroSection';
 import FeatureGrid from '@/components/ui/FeatureGrid';
 import { Feature, HowItWorksStep } from '@/types';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
+
+type TrackingResult =
+  | {
+      id: string;
+      status: string;
+      pickupLocation: string;
+      dropoffLocation: string;
+      driverName?: string;
+      vehicleNumber?: string;
+      estimatedArrival?: string;
+      error?: string;
+    }
+  | null;
 
 export default function HomePage() {
   const [trackingId, setTrackingId] = useState('');
-  const [trackingResult, setTrackingResult] = useState<any>(null);
+  const [trackingResult, setTrackingResult] = useState<TrackingResult>(null);
 
   // Mock features data
   const features: Feature[] = [
@@ -53,24 +67,45 @@ export default function HomePage() {
     },
   ];
 
-  // Mock booking status check
-  const handleTrackBooking = (e: React.FormEvent) => {
+  const handleTrackBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Mock data - in real app would fetch from API
-    if (trackingId.toUpperCase().startsWith('GMX-')) {
-      setTrackingResult({
-        id: trackingId.toUpperCase(),
-        status: 'assigned',
-        pickupLocation: 'Serrekunda Market',
-        dropoffLocation: 'Banjul Airport',
-        driverName: 'Ousman Jallow',
-        vehicleNumber: 'BJL 1234',
-        estimatedArrival: '15 minutes',
-      });
-    } else {
+    setTrackingResult(null);
+
+    const bookingRef = trackingId.trim().toUpperCase();
+    if (!bookingRef) return;
+
+    const { data: bookingData, error: bookingError } = await supabase
+      .from('bookings')
+      .select('id, booking_reference, status, pickup_address, dropoff_address, driver_id')
+      .eq('booking_reference', bookingRef)
+      .single();
+
+    if (bookingError || !bookingData) {
       setTrackingResult({ error: 'Booking not found. Please check your reference ID.' });
+      return;
     }
+
+    const result: TrackingResult = {
+      id: bookingData.booking_reference,
+      status: bookingData.status,
+      pickupLocation: bookingData.pickup_address ?? 'Unknown pickup',
+      dropoffLocation: bookingData.dropoff_address ?? 'Unknown drop-off',
+    };
+
+    if (bookingData.driver_id) {
+      const { data: driverData } = await supabase
+        .from('drivers')
+        .select('full_name, vehicle_plate')
+        .eq('id', bookingData.driver_id)
+        .single();
+
+      if (driverData) {
+        result.driverName = driverData.full_name;
+        result.vehicleNumber = driverData.vehicle_plate;
+      }
+    }
+
+    setTrackingResult(result);
   };
 
   return (
@@ -164,7 +199,7 @@ export default function HomePage() {
             {/* Tracking Result */}
             {trackingResult && (
               <div className="mt-6 pt-6 border-t border-gray-200">
-                {trackingResult.error ? (
+                {'error' in trackingResult ? (
                   <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded">
                     <p className="text-red-800">{trackingResult.error}</p>
                   </div>
@@ -179,16 +214,20 @@ export default function HomePage() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center py-2 border-b border-gray-200">
                         <span className="text-gray-600">Status</span>
-                        <span className="font-semibold text-green-700">Driver Assigned 🚕</span>
+                        <span className="font-semibold text-green-700">{trackingResult.status}</span>
                       </div>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                        <span className="text-gray-600">Driver</span>
-                        <span className="font-semibold">{trackingResult.driverName}</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                        <span className="text-gray-600">Vehicle</span>
-                        <span className="font-semibold">{trackingResult.vehicleNumber}</span>
-                      </div>
+                      {trackingResult.driverName && (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                          <span className="text-gray-600">Driver</span>
+                          <span className="font-semibold">{trackingResult.driverName}</span>
+                        </div>
+                      )}
+                      {trackingResult.vehicleNumber && (
+                        <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                          <span className="text-gray-600">Vehicle</span>
+                          <span className="font-semibold">{trackingResult.vehicleNumber}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center py-2 border-b border-gray-200">
                         <span className="text-gray-600">Pickup</span>
                         <span className="font-semibold text-right">{trackingResult.pickupLocation}</span>
@@ -196,10 +235,6 @@ export default function HomePage() {
                       <div className="flex justify-between items-center py-2 border-b border-gray-200">
                         <span className="text-gray-600">Drop-off</span>
                         <span className="font-semibold text-right">{trackingResult.dropoffLocation}</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2">
-                        <span className="text-gray-600">Est. Arrival</span>
-                        <span className="font-semibold text-primary-700">{trackingResult.estimatedArrival}</span>
                       </div>
                     </div>
                   </div>

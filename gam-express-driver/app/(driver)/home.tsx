@@ -148,7 +148,7 @@ export default function HomeScreen() {
   async function handleAcceptRide(booking: Booking) {
     if (!driver) return;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('bookings')
       .update({
         driver_id: driver.id,
@@ -157,10 +157,15 @@ export default function HomeScreen() {
       })
       .eq('id', booking.id)
       .eq('status', 'pending') // Optimistic lock — only claim if still pending
-      .is('driver_id', null);
+      .is('driver_id', null)
+      .select('*')
+      .single();
 
-    if (error) {
-      Alert.alert('Ride taken', 'This ride was already accepted by another driver.');
+    if (error || !data) {
+      Alert.alert(
+        'Ride taken',
+        error?.message ?? 'This ride was already accepted by another driver.'
+      );
       setIncomingBooking(null);
       return;
     }
