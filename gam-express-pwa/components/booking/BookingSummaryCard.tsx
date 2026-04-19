@@ -1,12 +1,24 @@
 import { BookingData } from '@/types';
-import { formatCurrency, formatDateTime } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import StatusBadge from '@/components/ui/StatusBadge';
+
+type LiveStatus = 'pending' | 'accepted' | 'en_route' | 'arrived' | 'completed' | 'cancelled';
+
+const STATUS_DESC: Record<LiveStatus, string> = {
+  pending:   'We are assigning a driver to your trip. You will receive a call shortly.',
+  accepted:  'A driver has been assigned and is heading your way.',
+  en_route:  'Your driver is on the way to your pickup location.',
+  arrived:   'Your driver has arrived at the pickup location.',
+  completed: 'Your ride is complete. Thank you for riding with Gam Express!',
+  cancelled: 'This booking has been cancelled.',
+};
 
 interface BookingSummaryCardProps {
   booking: BookingData;
+  liveStatus: LiveStatus;
 }
 
-export default function BookingSummaryCard({ booking }: BookingSummaryCardProps) {
+export default function BookingSummaryCard({ booking, liveStatus }: BookingSummaryCardProps) {
   return (
     <div className="card">
       {/* Header */}
@@ -32,9 +44,9 @@ export default function BookingSummaryCard({ booking }: BookingSummaryCardProps)
 
       {/* Status */}
       <div className="mb-6 text-center">
-        <StatusBadge status={booking.status} />
+        <StatusBadge status={liveStatus} />
         <p className="text-sm text-gray-600 mt-3">
-          We are assigning a driver to your trip. You will receive a call shortly.
+          {STATUS_DESC[liveStatus]}
         </p>
       </div>
 

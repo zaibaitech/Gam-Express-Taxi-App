@@ -22,7 +22,6 @@ export default function ConfirmationPage() {
   const router = useRouter();
   const [booking, setBooking] = useState<BookingData | null>(null);
   const [liveStatus, setLiveStatus] = useState<LiveStatus>('pending');
-  const [bookingDbId, setBookingDbId] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = sessionStorage.getItem('currentBooking');
@@ -31,10 +30,8 @@ export default function ConfirmationPage() {
     const parsed = JSON.parse(saved) as BookingData & { dbId?: string };
     setBooking(parsed);
 
-    // dbId is the actual UUID from the bookings table (stored alongside the reference)
     const dbId = parsed.dbId;
     if (!dbId) return;
-    setBookingDbId(dbId);
 
     // Fetch current status immediately
     supabase.from('bookings').select('status').eq('id', dbId).single().then(({ data }) => {
@@ -91,7 +88,7 @@ export default function ConfirmationPage() {
             )}
           </div>
 
-          <BookingSummaryCard booking={booking} />
+          <BookingSummaryCard booking={booking} liveStatus={liveStatus} />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
             <Link href="/" className="btn-secondary text-center">← Back to Home</Link>
