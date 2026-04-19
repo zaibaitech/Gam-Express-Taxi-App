@@ -16,7 +16,9 @@ type TrackingResult =
       driverName?: string;
       vehicleNumber?: string;
       estimatedArrival?: string;
-      error?: string;
+    }
+  | {
+      error: string;
     }
   | null;
 
