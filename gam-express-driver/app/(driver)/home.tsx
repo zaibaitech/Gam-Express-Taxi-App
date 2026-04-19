@@ -170,7 +170,13 @@ export default function HomeScreen() {
     router.push('/(driver)/active-ride');
   }
 
-  function handleDeclineRide() {
+  async function handleDeclineRide() {
+    if (incomingBooking) {
+      await supabase
+        .from('bookings')
+        .update({ status: 'cancelled' })
+        .eq('id', incomingBooking.id);
+    }
     setIncomingBooking(null);
   }
 
