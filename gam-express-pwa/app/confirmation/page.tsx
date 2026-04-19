@@ -33,12 +33,16 @@ export default function ConfirmationPage() {
     const dbId = parsed.dbId;
     if (!dbId) return;
 
-    // Fetch current status immediately
-    supabase.from('bookings').select('status').eq('id', dbId).single().then(({ data }) => {
-      if (data?.status) setLiveStatus(data.status as LiveStatus);
-    });
+    const fetchStatus = () =>
+      supabase.from('bookings').select('status').eq('id', dbId).single().then(({ data }) => {
+        if (data?.status) setLiveStatus(data.status as LiveStatus);
+      });
 
-    // Subscribe to real-time changes
+    // Fetch immediately, then poll every 5s as fallback for when realtime doesn't fire
+    fetchStatus();
+    const poll = setInterval(fetchStatus, 5000);
+
+    // Real-time subscription for instant updates
     const channel = supabase
       .channel(`booking-${dbId}`)
       .on('postgres_changes', {
@@ -51,7 +55,10 @@ export default function ConfirmationPage() {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      clearInterval(poll);
+      supabase.removeChannel(channel);
+    };
   }, [router]);
 
   if (!booking) {
