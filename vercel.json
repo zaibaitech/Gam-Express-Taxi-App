@@ -1,3 +1,14 @@
 {
-  "rootDirectory": "gam-express-pwa"
+  "builds": [
+    {
+      "src": "gam-express-pwa/package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "gam-express-pwa/$1"
+    }
+  ]
 }
