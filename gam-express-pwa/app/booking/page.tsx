@@ -62,7 +62,7 @@ export default function BookingPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
@@ -93,6 +93,7 @@ export default function BookingPage() {
       // Store confirmation data for the confirmation page
       sessionStorage.setItem('currentBooking', JSON.stringify({
         id: data.booking_reference,
+        dbId: data.id,
         pickupLocation: formData.pickupLocation,
         dropoffLocation: formData.dropoffLocation,
         customerName: formData.customerName,
