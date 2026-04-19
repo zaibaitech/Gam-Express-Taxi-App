@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd gam-express-pwa && npm install && npm run build",
+  "outputDirectory": "gam-express-pwa/.next",
+  "installCommand": "cd gam-express-pwa && npm install",
+  "framework": "nextjs"
+}
