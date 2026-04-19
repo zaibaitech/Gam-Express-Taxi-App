@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -13,24 +14,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
-    const ok = sessionStorage.getItem('gam_admin_auth') === 'true';
-    setAuthed(ok);
-    setChecked(true);
-    if (!ok && !isLoginPage) {
-      router.replace('/admin/login');
+    async function checkAuth() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setChecked(true);
+        if (!isLoginPage) router.replace('/admin/login');
+        return;
+      }
+      const { data: adminRow } = await supabase.from('admins').select('id').single();
+      if (!adminRow) {
+        await supabase.auth.signOut();
+        setChecked(true);
+        if (!isLoginPage) router.replace('/admin/login');
+        return;
+      }
+      setAuthed(true);
+      setChecked(true);
     }
+    checkAuth();
   }, [pathname]);
 
-  // Always render login page immediately — no auth needed
-  if (isLoginPage) {
-    return <>{children}</>;
-  }
-
-  // Wait until we've checked sessionStorage before rendering protected pages
+  if (isLoginPage) return <>{children}</>;
   if (!checked || !authed) return null;
 
-  function handleLogout() {
-    sessionStorage.removeItem('gam_admin_auth');
+  async function handleLogout() {
+    await supabase.auth.signOut();
     router.replace('/admin/login');
   }
 
@@ -38,6 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin', label: '📊 Dashboard', exact: true },
     { href: '/admin/bookings', label: '📋 Bookings' },
     { href: '/admin/drivers', label: '🚕 Drivers' },
+    { href: '/admin/admins', label: '👤 Admins' },
   ];
 
   return (
