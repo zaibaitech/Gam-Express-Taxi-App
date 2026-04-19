@@ -3,14 +3,27 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Service role key — only used in server-side API routes (admin actions)
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
 // Public client — used in browser/client components
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Admin client — bypasses RLS, only safe to use in server-side code (API routes / Server Actions)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+// Lazy singleton to avoid crashing client-side imports when service key is undefined
+let _supabaseAdmin: ReturnType<typeof createClient> | null = null;
+export function getSupabaseAdmin() {
+  if (!_supabaseAdmin) {
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
+    _supabaseAdmin = createClient(supabaseUrl, serviceKey);
+  }
+  return _supabaseAdmin;
+}
+
+/** @deprecated use getSupabaseAdmin() */
+export const supabaseAdmin = new Proxy({} as ReturnType<typeof createClient>, {
+  get(_t, prop) {
+    return (getSupabaseAdmin() as any)[prop];
+  },
+});
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
