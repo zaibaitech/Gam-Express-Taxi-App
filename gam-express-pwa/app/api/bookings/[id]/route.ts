@@ -10,7 +10,12 @@ export async function GET(
     return NextResponse.json({ error: 'Booking id is required.' }, { status: 400 });
   }
 
-  const supabaseAdmin = getSupabaseAdmin();
+  let supabaseAdmin;
+  try {
+    supabaseAdmin = getSupabaseAdmin();
+  } catch {
+    return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
+  }
   const { data: bookingData, error: bookingError } = await supabaseAdmin
     .from('bookings')
     .select('status, driver_id')

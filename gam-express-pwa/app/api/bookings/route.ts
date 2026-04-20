@@ -12,7 +12,13 @@ export async function GET(request: Request) {
     );
   }
 
-  const supabaseAdmin = getSupabaseAdmin();
+  let supabaseAdmin;
+  try {
+    supabaseAdmin = getSupabaseAdmin();
+  } catch {
+    return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
+  }
+
   const bookingResult = await supabaseAdmin
     .from('bookings')
     .select('id, booking_reference, status, pickup_address, dropoff_address, driver_id')
