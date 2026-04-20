@@ -13,18 +13,37 @@ export async function GET(request: Request) {
   }
 
   const supabaseAdmin = getSupabaseAdmin();
-  const { data: booking, error } = await supabaseAdmin
+  const bookingResult = await supabaseAdmin
     .from('bookings')
     .select('id, booking_reference, status, pickup_address, dropoff_address, driver_id')
     .eq('booking_reference', reference)
     .single();
 
-  if (error || !booking) {
+  const booking = bookingResult.data as {
+    id: string;
+    booking_reference: string;
+    status: string;
+    pickup_address: string | null;
+    dropoff_address: string | null;
+    driver_id: string | null;
+  } | null;
+
+  if (bookingResult.error || !booking) {
     return NextResponse.json(
-      { error: error?.message ?? 'Booking not found.' },
+      { error: bookingResult.error?.message ?? 'Booking not found.' },
       { status: 404 }
     );
   }
 
-  return NextResponse.json(booking);
+  let driver = null;
+  if (booking.driver_id) {
+    const { data: driverData } = await supabaseAdmin
+      .from('drivers')
+      .select('full_name, vehicle_plate')
+      .eq('id', booking.driver_id)
+      .single();
+    driver = driverData;
+  }
+
+  return NextResponse.json({ ...booking, driver });
 }

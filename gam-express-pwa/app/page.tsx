@@ -90,17 +90,9 @@ export default function HomePage() {
       dropoffLocation: bookingData.dropoff_address ?? 'Unknown drop-off',
     };
 
-    if (bookingData.driver_id) {
-      const { data: driverData } = await supabase
-        .from('drivers')
-        .select('full_name, vehicle_plate')
-        .eq('id', bookingData.driver_id)
-        .single();
-
-      if (driverData) {
-        result.driverName = driverData.full_name;
-        result.vehicleNumber = driverData.vehicle_plate;
-      }
+    if (bookingData.driver?.full_name) {
+      result.driverName = bookingData.driver.full_name;
+      result.vehicleNumber = bookingData.driver.vehicle_plate;
     }
 
     setTrackingResult(result);

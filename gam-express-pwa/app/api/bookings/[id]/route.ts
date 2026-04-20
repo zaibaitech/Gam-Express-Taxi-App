@@ -11,11 +11,13 @@ export async function GET(
   }
 
   const supabaseAdmin = getSupabaseAdmin();
-  const { data: booking, error: bookingError } = await supabaseAdmin
+  const { data: bookingData, error: bookingError } = await supabaseAdmin
     .from('bookings')
     .select('status, driver_id')
     .eq('id', bookingId)
     .single();
+
+  const booking = bookingData as { status: string; driver_id: string | null } | null;
 
   if (bookingError || !booking) {
     return NextResponse.json(
@@ -31,7 +33,7 @@ export async function GET(
       .select('full_name, vehicle_plate, vehicle_model, phone')
       .eq('id', booking.driver_id)
       .single();
-    driver = driverData;
+    driver = driverData as { full_name: string; vehicle_plate: string; vehicle_model: string; phone: string } | null;
   }
 
   return NextResponse.json({ status: booking.status, driver });
