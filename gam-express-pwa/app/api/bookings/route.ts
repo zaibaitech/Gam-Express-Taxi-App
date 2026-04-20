@@ -1,6 +1,45 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
 
+export async function POST(request: Request) {
+  let supabaseAdmin;
+  try {
+    supabaseAdmin = getSupabaseAdmin();
+  } catch {
+    return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
+  }
+
+  const body = await request.json();
+  const { booking_reference, customer_name, customer_phone, pickup_address, dropoff_address, estimated_fare, payment_method } = body;
+
+  if (!booking_reference || !customer_name || !customer_phone || !pickup_address || !dropoff_address) {
+    return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabaseAdmin as any)
+    .from('bookings')
+    .insert({
+      booking_reference,
+      status: 'pending',
+      customer_name,
+      customer_phone,
+      pickup_address,
+      dropoff_address,
+      estimated_fare: estimated_fare || null,
+      payment_method,
+      driver_id: null,
+    })
+    .select('id, booking_reference')
+    .single();
+
+  if (error || !data) {
+    return NextResponse.json({ error: error?.message ?? 'Failed to create booking.' }, { status: 500 });
+  }
+
+  return NextResponse.json({ id: (data as { id: string; booking_reference: string }).id, booking_reference: (data as { id: string; booking_reference: string }).booking_reference });
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const reference = url.searchParams.get('reference');

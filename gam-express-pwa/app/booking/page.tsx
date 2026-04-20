@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { generateBookingId, calculateEstimatedFare, isValidPhoneNumber } from '@/lib/utils';
-import { supabase } from '@/lib/supabase';
 import FareEstimateCard from '@/components/booking/FareEstimateCard';
 import PaymentMethodSelector from '@/components/booking/PaymentMethodSelector';
 
@@ -72,28 +71,27 @@ export default function BookingPage() {
     try {
       const bookingRef = generateBookingId();
 
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert({
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           booking_reference: bookingRef,
-          status: 'pending',
           customer_name: formData.customerName.trim(),
           customer_phone: formData.phoneNumber.trim(),
           pickup_address: formData.pickupLocation.trim(),
           dropoff_address: formData.dropoffLocation.trim(),
           estimated_fare: estimatedFare || null,
           payment_method: formData.paymentMethod,
-          driver_id: null,
-        })
-        .select('id, booking_reference')
-        .single();
+        }),
+      });
 
-      if (error) throw error;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Failed to create booking.');
 
       // Store confirmation data for the confirmation page
       sessionStorage.setItem('currentBooking', JSON.stringify({
-        id: data.booking_reference,
-        dbId: data.id,
+        id: data.booking_reference as string,
+        dbId: data.id as string,
         pickupLocation: formData.pickupLocation,
         dropoffLocation: formData.dropoffLocation,
         customerName: formData.customerName,
