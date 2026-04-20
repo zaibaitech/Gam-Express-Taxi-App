@@ -5,7 +5,6 @@ import HeroSection from '@/components/home/HeroSection';
 import FeatureGrid from '@/components/ui/FeatureGrid';
 import { Feature, HowItWorksStep } from '@/types';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
 
 type TrackingResult =
   | {
@@ -76,13 +75,10 @@ export default function HomePage() {
     const bookingRef = trackingId.trim().toUpperCase();
     if (!bookingRef) return;
 
-    const { data: bookingData, error: bookingError } = await supabase
-      .from('bookings')
-      .select('id, booking_reference, status, pickup_address, dropoff_address, driver_id')
-      .eq('booking_reference', bookingRef)
-      .single();
+    const response = await fetch(`/api/bookings?reference=${encodeURIComponent(bookingRef)}`);
+    const bookingData = await response.json();
 
-    if (bookingError || !bookingData) {
+    if (!response.ok || bookingData.error) {
       setTrackingResult({ error: 'Booking not found. Please check your reference ID.' });
       return;
     }

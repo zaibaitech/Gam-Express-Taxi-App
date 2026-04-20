@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase';
 
 export async function GET(
   _request: Request,
@@ -10,7 +10,8 @@ export async function GET(
     return NextResponse.json({ error: 'Booking id is required.' }, { status: 400 });
   }
 
-  const { data: booking, error: bookingError } = await supabase
+  const supabaseAdmin = getSupabaseAdmin();
+  const { data: booking, error: bookingError } = await supabaseAdmin
     .from('bookings')
     .select('status, driver_id')
     .eq('id', bookingId)
@@ -25,7 +26,7 @@ export async function GET(
 
   let driver = null;
   if (booking.driver_id) {
-    const { data: driverData } = await supabase
+    const { data: driverData } = await supabaseAdmin
       .from('drivers')
       .select('full_name, vehicle_plate, vehicle_model, phone')
       .eq('id', booking.driver_id)
