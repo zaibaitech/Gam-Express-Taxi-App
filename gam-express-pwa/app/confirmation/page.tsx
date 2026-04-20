@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
 import { BookingData } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 
@@ -56,56 +55,25 @@ export default function ConfirmationPage() {
     if (!dbId) return;
 
     const fetchFull = async () => {
-      const { data } = await supabase
-        .from('bookings')
-        .select('status, driver_id')
-        .eq('id', dbId)
-        .single();
+      const response = await fetch(`/api/bookings/${dbId}`);
+      const payload = await response.json();
+      if (!response.ok || payload.error) {
+        console.error('Unable to load booking status:', payload.error ?? response.statusText);
+        return;
+      }
 
-      if (!data) return;
-      const newStatus = data.status as LiveStatus;
+      const newStatus = payload.status as LiveStatus;
       setLiveStatus(newStatus);
-
-      if (data.driver_id && newStatus !== 'pending') {
-        const { data: driverData } = await supabase
-          .from('drivers')
-          .select('full_name, vehicle_plate, vehicle_model, phone')
-          .eq('id', data.driver_id)
-          .single();
-        if (driverData) setDriver(driverData);
+      if (payload.driver && newStatus !== 'pending') {
+        setDriver(payload.driver);
       }
     };
 
     fetchFull();
     const poll = setInterval(fetchFull, 5000);
 
-    const channel = supabase
-      .channel(`booking-${dbId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'bookings',
-        filter: `id=eq.${dbId}`,
-      }, (payload) => {
-        const newStatus = payload.new?.status as LiveStatus;
-        if (newStatus) {
-          setLiveStatus(newStatus);
-          // Fetch driver info if just assigned
-          if (payload.new?.driver_id && newStatus !== 'pending') {
-            supabase
-              .from('drivers')
-              .select('full_name, vehicle_plate, vehicle_model, phone')
-              .eq('id', payload.new.driver_id)
-              .single()
-              .then(({ data: d }) => { if (d) setDriver(d); });
-          }
-        }
-      })
-      .subscribe();
-
     return () => {
       clearInterval(poll);
-      supabase.removeChannel(channel);
     };
   }, [router]);
 
