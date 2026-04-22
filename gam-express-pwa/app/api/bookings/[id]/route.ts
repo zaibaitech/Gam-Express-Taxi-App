@@ -20,13 +20,24 @@ export async function GET(
     .from('bookings')
     .select('status, driver_id')
     .eq('id', bookingId)
-    .single();
+    .maybeSingle();
 
   const booking = bookingData as { status: string; driver_id: string | null } | null;
 
-  if (bookingError || !booking) {
+  if (bookingError) {
     return NextResponse.json(
-      { error: bookingError?.message ?? 'Booking not found.' },
+      { error: bookingError.message, code: bookingError.code },
+      { status: 500 }
+    );
+  }
+
+  if (!booking) {
+    // Diagnostic: count total bookings visible to this client
+    const { count } = await supabaseAdmin
+      .from('bookings')
+      .select('id', { count: 'exact', head: true });
+    return NextResponse.json(
+      { error: 'Booking not found.', id: bookingId, visibleBookings: count },
       { status: 404 }
     );
   }

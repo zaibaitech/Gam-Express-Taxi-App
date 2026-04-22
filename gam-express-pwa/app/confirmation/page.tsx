@@ -66,7 +66,7 @@ export default function ConfirmationPage() {
 
       if (response.status === 404) {
         if (intervalId) { clearInterval(intervalId); intervalId = null; }
-        console.error('Booking not found:', dbId);
+        try { const body = await response.json(); console.error('Booking not found:', body); } catch { console.error('Booking not found:', dbId); }
         return;
       }
 
