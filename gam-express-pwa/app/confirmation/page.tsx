@@ -54,9 +54,30 @@ export default function ConfirmationPage() {
     const dbId = parsed.dbId;
     if (!dbId) return;
 
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
     const fetchFull = async () => {
-      const response = await fetch(`/api/bookings/${dbId}`);
-      const payload = await response.json();
+      let response: Response;
+      try {
+        response = await fetch(`/api/bookings/${dbId}`);
+      } catch {
+        return;
+      }
+
+      if (response.status === 404) {
+        if (intervalId) { clearInterval(intervalId); intervalId = null; }
+        console.error('Booking not found:', dbId);
+        return;
+      }
+
+      let payload: { status?: string; driver?: DriverInfo; error?: string };
+      try {
+        payload = await response.json();
+      } catch {
+        console.error('Non-JSON response from /api/bookings — deployment may be outdated');
+        return;
+      }
+
       if (!response.ok || payload.error) {
         console.error('Unable to load booking status:', payload.error ?? response.statusText);
         return;
@@ -67,13 +88,16 @@ export default function ConfirmationPage() {
       if (payload.driver && newStatus !== 'pending') {
         setDriver(payload.driver);
       }
+      if (newStatus === 'completed' || newStatus === 'cancelled') {
+        if (intervalId) { clearInterval(intervalId); intervalId = null; }
+      }
     };
 
     fetchFull();
-    const poll = setInterval(fetchFull, 5000);
+    intervalId = setInterval(fetchFull, 5000);
 
     return () => {
-      clearInterval(poll);
+      if (intervalId) clearInterval(intervalId);
     };
   }, [router]);
 
