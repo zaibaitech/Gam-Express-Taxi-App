@@ -161,8 +161,9 @@ export default function ConfirmationPage() {
             <h3 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wide">Trip Progress</h3>
             <div className="space-y-0">
               {STEPS.map((step, i) => {
-                const done = i < currentStep || (i === currentStep && (liveStatus === 'completed' || liveStatus === 'cancelled'));
-                const active = i === currentStep && liveStatus !== 'completed' && liveStatus !== 'cancelled';
+                const isTerminal = liveStatus === 'completed';
+                const done = i < currentStep || (i === currentStep && isTerminal);
+                const active = i === currentStep && !isTerminal;
                 const future = i > currentStep;
                 return (
                   <div key={step.status} className="flex items-start gap-3">
