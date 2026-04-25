@@ -1,3 +1,8 @@
 {
-  "rootDirectory": "gam-express-pwa"
+  "projects": [
+    {
+      "name": "gam-express-pwa",
+      "rootDirectory": "gam-express-pwa"
+    }
+  ]
 }
