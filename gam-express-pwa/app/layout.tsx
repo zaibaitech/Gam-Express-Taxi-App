@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import AppHeader from "@/components/layout/AppHeader";
@@ -11,18 +11,22 @@ export const metadata: Metadata = {
   title: "Gam Express Taxi - Simple, Safe & Reliable",
   description: "Book your taxi quickly and safely in The Gambia. Fast booking, trusted drivers, mobile money accepted.",
   manifest: "/manifest.json",
-  themeColor: "#0ea5e9",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
+  icons: {
+    icon: "/favicon.svg",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Gam Express Taxi",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#0ea5e9",
 };
 
 export default function RootLayout({

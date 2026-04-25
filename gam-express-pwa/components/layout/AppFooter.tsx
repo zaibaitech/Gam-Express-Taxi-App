@@ -1,3 +1,5 @@
+'use client';
+
 export default function AppFooter() {
   return (
     <footer className="bg-gray-900 text-gray-300 mt-12">

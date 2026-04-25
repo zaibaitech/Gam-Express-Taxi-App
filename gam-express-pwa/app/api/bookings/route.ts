@@ -5,8 +5,9 @@ export async function POST(request: Request) {
   let supabaseAdmin;
   try {
     supabaseAdmin = getSupabaseAdmin();
-  } catch {
-    return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
+  } catch (err: any) {
+    console.error('Supabase Admin initialization error:', err.message);
+    return NextResponse.json({ error: 'Server configuration error: ' + err.message }, { status: 500 });
   }
 
   const body = await request.json();
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error || !data) {
+    console.error('Booking insert error:', error?.message);
     return NextResponse.json({ error: error?.message ?? 'Failed to create booking.' }, { status: 500 });
   }
 

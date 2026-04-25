@@ -13,8 +13,9 @@ export async function GET(
   let supabaseAdmin;
   try {
     supabaseAdmin = getSupabaseAdmin();
-  } catch {
-    return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
+  } catch (err: any) {
+    console.error('Supabase Admin initialization error:', err.message);
+    return NextResponse.json({ error: 'Server configuration error: ' + err.message }, { status: 500 });
   }
   const { data: bookingData, error: bookingError } = await supabaseAdmin
     .from('bookings')
