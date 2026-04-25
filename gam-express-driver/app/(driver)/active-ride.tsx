@@ -7,6 +7,7 @@ import {
   Alert,
   ScrollView,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -50,6 +51,7 @@ export default function ActiveRideScreen() {
   const tripsToday = useDriverStore((s) => s.tripsToday);
 
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [showCompletionSheet, setShowCompletionSheet] = useState(false);
 
   // Subscribe to real-time cancellation by admin/customer
@@ -125,6 +127,35 @@ export default function ActiveRideScreen() {
       Alert.alert('Error', err.message ?? 'Could not update ride status.');
     } finally {
       setUpdatingStatus(false);
+    }
+  }
+
+  function confirmCancelRide() {
+    Alert.alert(
+      'Cancel Ride?',
+      'Are you sure you want to cancel this ride? The passenger will be notified.',
+      [
+        { text: 'Keep Ride', style: 'cancel' },
+        { text: 'Cancel Ride', style: 'destructive', onPress: handleCancelRide },
+      ]
+    );
+  }
+
+  async function handleCancelRide() {
+    if (!activeBooking) return;
+    setCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'cancelled' })
+        .eq('id', activeBooking.id);
+      if (error) throw error;
+      setActiveBooking(null);
+      router.replace('/(driver)/home');
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'Could not cancel ride.');
+    } finally {
+      setCancelling(false);
     }
   }
 
@@ -335,7 +366,26 @@ export default function ActiveRideScreen() {
             onPress={advanceStatus}
             disabled={updatingStatus}
           >
-            <Text style={styles.actionBtnText}>{statusConfig.btnLabel}</Text>
+            {updatingStatus ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.actionBtnText}>{statusConfig.btnLabel}</Text>
+            )}
+          </Pressable>
+        )}
+
+        {/* Cancel ride — only available before trip starts (accepted/arrived) */}
+        {(activeBooking.status === 'accepted' || activeBooking.status === 'arrived') && (
+          <Pressable
+            style={({ pressed }) => [styles.cancelBtn, pressed && { opacity: 0.8 }]}
+            onPress={confirmCancelRide}
+            disabled={cancelling}
+          >
+            {cancelling ? (
+              <ActivityIndicator color="#EF4444" size="small" />
+            ) : (
+              <Text style={styles.cancelBtnText}>Cancel Ride</Text>
+            )}
           </Pressable>
         )}
       </ScrollView>
@@ -548,6 +598,21 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#FFFFFF',
     letterSpacing: 1.5,
+  },
+  cancelBtn: {
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    backgroundColor: 'rgba(239,68,68,0.08)',
+  },
+  cancelBtnText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 15,
+    color: '#EF4444',
+    letterSpacing: 0.5,
   },
   emptyState: {
     flex: 1,

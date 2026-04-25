@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  Linking,
 } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,6 +32,7 @@ export default function HomeScreen() {
   const setTripsToday = useDriverStore((s) => s.setTripsToday);
 
   const [togglingStatus, setTogglingStatus] = useState(false);
+  const [rating, setRating] = useState<number | null>(null);
 
   // Pulsing animation for "waiting" state
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -84,9 +86,22 @@ export default function HomeScreen() {
       .gte('completed_at', today.toISOString());
 
     if (data) {
-      const total = data.reduce((sum, b) => sum + (b.estimated_fare ?? 0), 0);
+      const total = data.reduce((sum: number, b: { estimated_fare: number | null }) => sum + (b.estimated_fare ?? 0), 0);
       setEarningsToday(total);
       setTripsToday(data.length);
+    }
+
+    // Load average rating from all completed trips with a rating
+    const { data: ratingData } = await supabase
+      .from('bookings')
+      .select('rating')
+      .eq('driver_id', driver.id)
+      .eq('status', 'completed')
+      .not('rating', 'is', null);
+
+    if (ratingData && ratingData.length > 0) {
+      const avg = ratingData.reduce((sum: number, b: { rating: number | null }) => sum + (b.rating ?? 0), 0) / ratingData.length;
+      setRating(Math.round(avg * 10) / 10);
     }
   }
 
@@ -251,6 +266,25 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Rating + Support row */}
+        <View style={styles.quickRow}>
+          <View style={styles.ratingCard}>
+            <Text style={styles.ratingEmoji}>⭐</Text>
+            <Text style={styles.ratingValue}>
+              {rating !== null ? rating.toFixed(1) : '—'}
+            </Text>
+            <Text style={styles.ratingLabel}>Your Rating</Text>
+          </View>
+          <Pressable
+            style={({ pressed }) => [styles.supportCard, pressed && { opacity: 0.8 }]}
+            onPress={() => Linking.openURL('tel:+2203456789')}
+          >
+            <Text style={styles.supportEmoji}>📞</Text>
+            <Text style={styles.supportTitle}>Support</Text>
+            <Text style={styles.supportSub}>Call us anytime</Text>
+          </Pressable>
+        </View>
+
         {/* Online tip */}
         {isOnline && (
           <View style={styles.tipCard}>
@@ -403,6 +437,54 @@ const styles = StyleSheet.create({
   },
   statusDotOffline: {
     backgroundColor: '#EF4444',
+  },
+  quickRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  ratingCard: {
+    flex: 1,
+    backgroundColor: '#1A1A2E',
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#2D2D44',
+  },
+  ratingEmoji: { fontSize: 24 },
+  ratingValue: {
+    fontFamily: 'Urbanist_700Bold',
+    fontSize: 26,
+    color: '#F5C518',
+  },
+  ratingLabel: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    color: '#9CA3AF',
+  },
+  supportCard: {
+    flex: 1,
+    backgroundColor: '#1A1A2E',
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#2D2D44',
+  },
+  supportEmoji: { fontSize: 24 },
+  supportTitle: {
+    fontFamily: 'Urbanist_700Bold',
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  supportSub: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    color: '#9CA3AF',
   },
   tipCard: {
     backgroundColor: 'rgba(245, 197, 24, 0.08)',
