@@ -165,6 +165,26 @@ export default function ActiveRideScreen() {
     Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(address.trim())}`);
   }
 
+  function navigateTo(address: string) {
+    const encoded = encodeURIComponent(address.trim());
+    // Try Waze first (preferred by drivers), fall back to Google Maps
+    Linking.canOpenURL('waze://').then((wazeAvailable) => {
+      if (wazeAvailable) {
+        Linking.openURL(`waze://?q=${encoded}&navigate=yes`);
+      } else {
+        Linking.openURL(`https://maps.google.com/?q=${encoded}&navigate=yes`);
+      }
+    });
+  }
+
+  // Destination depends on ride status:
+  // accepted/arrived → navigate to pickup
+  // en_route        → navigate to dropoff
+  const navigateTarget =
+    activeBooking?.status === 'en_route'
+      ? activeBooking.dropoff_address
+      : activeBooking?.pickup_address;
+
   function openPhone() {
     if (!activeBooking?.customer_phone) return;
     Linking.openURL(`tel:${activeBooking.customer_phone}`);
@@ -365,6 +385,23 @@ export default function ActiveRideScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Navigate button */}
+        {navigateTarget && (
+          <Pressable
+            style={({ pressed }) => [styles.navigateBtn, pressed && { opacity: 0.88 }]}
+            onPress={() => navigateTo(navigateTarget)}
+          >
+            <Text style={styles.navigateBtnIcon}>🗺️</Text>
+            <View>
+              <Text style={styles.navigateBtnLabel}>Navigate</Text>
+              <Text style={styles.navigateBtnSub}>
+                {activeBooking.status === 'en_route' ? 'To Dropoff' : 'To Pickup'} · Waze / Google Maps
+              </Text>
+            </View>
+            <Text style={styles.navigateBtnChevron}>›</Text>
+          </Pressable>
+        )}
 
         {/* Action button */}
         {statusConfig && (
@@ -705,6 +742,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     letterSpacing: 1,
+  },
+  navigateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E3A5F',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+    gap: 12,
+  },
+  navigateBtnIcon: {
+    fontSize: 26,
+  },
+  navigateBtnLabel: {
+    fontFamily: 'Urbanist_700Bold',
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  navigateBtnSub: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 1,
+  },
+  navigateBtnChevron: {
+    fontFamily: 'Urbanist_700Bold',
+    fontSize: 24,
+    color: '#3B82F6',
+    marginLeft: 'auto',
   },
   plusCode: {
     fontFamily: 'Inter_500Medium',
