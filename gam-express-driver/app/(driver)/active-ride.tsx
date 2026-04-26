@@ -114,7 +114,7 @@ export default function ActiveRideScreen() {
         throw error ?? new Error('Could not update ride status.');
       }
 
-      const updatedBooking = { ...activeBooking, status: config.nextStatus as BookingStatus };
+      const updatedBooking = { ...activeBooking, status: config.nextStatus };
       setActiveBooking(updatedBooking);
 
       if (config.nextStatus === 'completed') {
@@ -159,6 +159,12 @@ export default function ActiveRideScreen() {
     }
   }
 
+  const PLUS_CODE_RE = /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,}$/i;
+  function isPlusCode(v: string) { return PLUS_CODE_RE.test(v.trim()); }
+  function openInMaps(address: string) {
+    Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(address.trim())}`);
+  }
+
   function openPhone() {
     if (!activeBooking?.customer_phone) return;
     Linking.openURL(`tel:${activeBooking.customer_phone}`);
@@ -166,7 +172,7 @@ export default function ActiveRideScreen() {
 
   function openWhatsApp() {
     if (!activeBooking?.customer_phone) return;
-    const digits = activeBooking.customer_phone.replace(/\D/g, '');
+    const digits = activeBooking.customer_phone.replaceAll(/\D/g, '');
     Linking.openURL(`https://wa.me/${digits}`);
   }
 
@@ -191,21 +197,20 @@ export default function ActiveRideScreen() {
 
   const statusConfig = STATUS_FLOW[activeBooking.status];
 
-  const hasCoords =
-    activeBooking.pickup_lat !== null &&
-    activeBooking.pickup_lng !== null;
+  const pickupLat = activeBooking.pickup_lat;
+  const pickupLng = activeBooking.pickup_lng;
+  const hasCoords = pickupLat !== null && pickupLng !== null;
 
   const mapRegion = hasCoords
     ? {
-        latitude: activeBooking.pickup_lat!,
-        longitude: activeBooking.pickup_lng!,
+        latitude: pickupLat,
+        longitude: pickupLng,
         latitudeDelta: 0.04,
         longitudeDelta: 0.04,
       }
     : {
-        // Banjul, Gambia default
         latitude: 13.4549,
-        longitude: -16.5790,
+        longitude: -16.579,
         latitudeDelta: 0.08,
         longitudeDelta: 0.08,
       };
@@ -230,8 +235,7 @@ export default function ActiveRideScreen() {
           showsUserLocation
           showsMyLocationButton={false}
         >
-          {/* Pickup marker */}
-          {activeBooking.pickup_lat && activeBooking.pickup_lng && (
+          {!!(activeBooking.pickup_lat && activeBooking.pickup_lng) && (
             <Marker
               coordinate={{
                 latitude: activeBooking.pickup_lat,
@@ -243,8 +247,7 @@ export default function ActiveRideScreen() {
             />
           )}
 
-          {/* Dropoff marker */}
-          {activeBooking.dropoff_lat && activeBooking.dropoff_lng && (
+          {!!(activeBooking.dropoff_lat && activeBooking.dropoff_lng) && (
             <Marker
               coordinate={{
                 latitude: activeBooking.dropoff_lat,
@@ -256,11 +259,10 @@ export default function ActiveRideScreen() {
             />
           )}
 
-          {/* Simple straight line — good enough for low-end devices */}
-          {activeBooking.pickup_lat &&
+          {!!(activeBooking.pickup_lat &&
             activeBooking.pickup_lng &&
             activeBooking.dropoff_lat &&
-            activeBooking.dropoff_lng && (
+            activeBooking.dropoff_lng) && (
               <Polyline
                 coordinates={[
                   { latitude: activeBooking.pickup_lat, longitude: activeBooking.pickup_lng },
@@ -322,9 +324,14 @@ export default function ActiveRideScreen() {
             <View style={[styles.routeDot, { backgroundColor: '#22C55E' }]} />
             <View style={styles.routeText}>
               <Text style={styles.routeLabel}>PICKUP</Text>
-              <Text style={styles.routeAddress}>
-                {activeBooking.pickup_address ?? 'Location on map'}
-              </Text>
+              <Pressable onPress={() => activeBooking.pickup_address && openInMaps(activeBooking.pickup_address)}>
+                <Text style={isPlusCode(activeBooking.pickup_address ?? '') ? [styles.routeAddress, styles.plusCode] : styles.routeAddress}>
+                  {activeBooking.pickup_address ?? 'Location on map'}
+                </Text>
+                {isPlusCode(activeBooking.pickup_address ?? '') && (
+                  <Text style={styles.plusCodeHint}>📍 Tap to navigate</Text>
+                )}
+              </Pressable>
             </View>
           </View>
           <View style={styles.routeLine} />
@@ -332,9 +339,14 @@ export default function ActiveRideScreen() {
             <View style={[styles.routeDot, { backgroundColor: '#EF4444' }]} />
             <View style={styles.routeText}>
               <Text style={styles.routeLabel}>DROPOFF</Text>
-              <Text style={styles.routeAddress}>
-                {activeBooking.dropoff_address ?? 'Location on map'}
-              </Text>
+              <Pressable onPress={() => activeBooking.dropoff_address && openInMaps(activeBooking.dropoff_address)}>
+                <Text style={isPlusCode(activeBooking.dropoff_address ?? '') ? [styles.routeAddress, styles.plusCode] : styles.routeAddress}>
+                  {activeBooking.dropoff_address ?? 'Location on map'}
+                </Text>
+                {isPlusCode(activeBooking.dropoff_address ?? '') && (
+                  <Text style={styles.plusCodeHint}>📍 Tap to navigate</Text>
+                )}
+              </Pressable>
             </View>
           </View>
         </View>
@@ -693,5 +705,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     letterSpacing: 1,
+  },
+  plusCode: {
+    fontFamily: 'Inter_500Medium',
+    color: '#F5C518',
+    letterSpacing: 0.5,
+  },
+  plusCodeHint: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 2,
   },
 });

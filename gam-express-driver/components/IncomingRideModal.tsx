@@ -5,12 +5,23 @@ import {
   Pressable,
   Modal,
   Animated,
-  Easing,
   Vibration,
+  Linking,
 } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import type { Booking } from '../lib/supabase';
+
+const PLUS_CODE_RE = /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,}$/i;
+
+function isPlusCode(v: string): boolean {
+  return PLUS_CODE_RE.test(v.trim());
+}
+
+function openInMaps(address: string) {
+  const encoded = encodeURIComponent(address.trim());
+  Linking.openURL(`https://maps.google.com/?q=${encoded}`);
+}
 
 const COUNTDOWN_SECONDS = 15;
 
@@ -90,9 +101,14 @@ export function IncomingRideModal({ booking, onAccept, onDecline }: Props) {
               <View style={[styles.routeDot, styles.routeDotGreen]} />
               <View style={styles.routeTextWrapper}>
                 <Text style={styles.routeLabel}>PICKUP</Text>
-                <Text style={styles.routeAddress} numberOfLines={2}>
-                  {booking.pickup_address ?? 'Location shared'}
-                </Text>
+                <Pressable onPress={() => booking.pickup_address && openInMaps(booking.pickup_address)}>
+                  <Text style={isPlusCode(booking.pickup_address ?? '') ? [styles.routeAddress, styles.plusCode] : styles.routeAddress} numberOfLines={2}>
+                    {booking.pickup_address ?? 'Location shared'}
+                  </Text>
+                  {isPlusCode(booking.pickup_address ?? '') && (
+                    <Text style={styles.plusCodeHint}>📍 Tap to open in Maps</Text>
+                  )}
+                </Pressable>
               </View>
             </View>
 
@@ -102,9 +118,14 @@ export function IncomingRideModal({ booking, onAccept, onDecline }: Props) {
               <View style={[styles.routeDot, styles.routeDotRed]} />
               <View style={styles.routeTextWrapper}>
                 <Text style={styles.routeLabel}>DROPOFF</Text>
-                <Text style={styles.routeAddress} numberOfLines={2}>
-                  {booking.dropoff_address ?? 'Location shared'}
-                </Text>
+                <Pressable onPress={() => booking.dropoff_address && openInMaps(booking.dropoff_address)}>
+                  <Text style={isPlusCode(booking.dropoff_address ?? '') ? [styles.routeAddress, styles.plusCode] : styles.routeAddress} numberOfLines={2}>
+                    {booking.dropoff_address ?? 'Location shared'}
+                  </Text>
+                  {isPlusCode(booking.dropoff_address ?? '') && (
+                    <Text style={styles.plusCodeHint}>📍 Tap to open in Maps</Text>
+                  )}
+                </Pressable>
               </View>
             </View>
           </View>
@@ -250,6 +271,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
     lineHeight: 20,
+  },
+  plusCode: {
+    fontFamily: 'Inter_500Medium',
+    color: '#F5C518',
+    letterSpacing: 0.5,
+  },
+  plusCodeHint: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 2,
   },
   fareRow: {
     flexDirection: 'row',

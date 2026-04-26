@@ -1,5 +1,32 @@
 // Utility functions for the taxi booking app
 
+// ---------------------------------------------------------------------------
+// Plus Code utilities
+// A Plus Code looks like: 796RWF8Q+WF  or  WF8Q+WF (short form)
+// Full format:  [2-8 chars][+][2+ chars]
+// Short format: [2-4 chars][+][2+ chars]  (requires a locality to resolve)
+// ---------------------------------------------------------------------------
+
+const PLUS_CODE_RE = /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,}$/i;
+
+export function isPlusCode(value: string): boolean {
+  return PLUS_CODE_RE.test(value.trim().replaceAll(' ', ''));
+}
+
+/** Normalise to uppercase with no spaces */
+export function normalisePlusCode(value: string): string {
+  return value.trim().replaceAll(' ', '').toUpperCase();
+}
+
+/**
+ * Return a Google Maps URL that opens the Plus Code so drivers can navigate.
+ * Works for both full and short codes (short codes resolve relative to Gambia).
+ */
+export function plusCodeMapsUrl(code: string): string {
+  const encoded = encodeURIComponent(normalisePlusCode(code));
+  return `https://maps.google.com/?q=${encoded}`;
+}
+
 /**
  * Generate a random booking reference ID
  */
