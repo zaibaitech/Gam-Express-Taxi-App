@@ -14,14 +14,15 @@ export async function POST(
     return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = supabaseAdmin as any;
+
   // Only allow cancel if still pending or accepted
-  const { data: bookingData } = await supabaseAdmin
+  const { data: booking } = await db
     .from('bookings')
     .select('status')
     .eq('id', bookingId)
     .single();
-
-  const booking = bookingData as { status: string } | null;
 
   if (!booking) {
     return NextResponse.json({ error: 'Booking not found.' }, { status: 404 });
@@ -34,7 +35,7 @@ export async function POST(
     );
   }
 
-  const { error } = await supabaseAdmin
+  const { error } = await db
     .from('bookings')
     .update({ status: 'cancelled' })
     .eq('id', bookingId);

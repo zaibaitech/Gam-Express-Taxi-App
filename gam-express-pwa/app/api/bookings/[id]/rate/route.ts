@@ -26,11 +26,12 @@ export async function POST(
     return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
   }
 
-  const { error } = await supabaseAdmin
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabaseAdmin as any)
     .from('bookings')
     .update({ rating })
     .eq('id', bookingId)
-    .eq('status', 'completed'); // Only allow rating completed rides
+    .eq('status', 'completed');
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
