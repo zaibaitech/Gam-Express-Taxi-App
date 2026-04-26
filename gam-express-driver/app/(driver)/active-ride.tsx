@@ -23,6 +23,22 @@ type StatusConfig = {
   btnColor: string;
 };
 
+const PLUS_CODE_RE = /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,}$/i;
+function isPlusCode(v: string) { return PLUS_CODE_RE.test(v.trim()); }
+function openInMaps(address: string) {
+  Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(address.trim())}`);
+}
+function navigateTo(address: string) {
+  const encoded = encodeURIComponent(address.trim());
+  Linking.canOpenURL('waze://').then((wazeAvailable) => {
+    if (wazeAvailable) {
+      Linking.openURL(`waze://?q=${encoded}&navigate=yes`);
+    } else {
+      Linking.openURL(`https://maps.google.com/?q=${encoded}&navigate=yes`);
+    }
+  });
+}
+
 const STATUS_FLOW: Partial<Record<BookingStatus, StatusConfig>> = {
   accepted: {
     btnLabel: "I'VE ARRIVED",
@@ -88,21 +104,23 @@ export default function ActiveRideScreen() {
     };
   }, [activeBooking?.id]);
 
+  function onTripCompleted() {
+    setEarningsToday(earningsToday + (activeBooking?.estimated_fare ?? 0));
+    setTripsToday(tripsToday + 1);
+    setShowCompletionSheet(true);
+  }
+
   async function advanceStatus() {
     if (!activeBooking || !driver) return;
     const config = STATUS_FLOW[activeBooking.status];
     if (!config) return;
 
     setUpdatingStatus(true);
+    const isCompleting = config.nextStatus === 'completed';
+    const updatePayload: Record<string, unknown> = { status: config.nextStatus };
+    if (isCompleting) updatePayload.completed_at = new Date().toISOString();
+
     try {
-      const updatePayload: Record<string, unknown> = {
-        status: config.nextStatus,
-      };
-
-      if (config.nextStatus === 'completed') {
-        updatePayload.completed_at = new Date().toISOString();
-      }
-
       const { data, error } = await supabase
         .from('bookings')
         .update(updatePayload)
@@ -110,19 +128,10 @@ export default function ActiveRideScreen() {
         .select('*')
         .single();
 
-      if (error || !data) {
-        throw error ?? new Error('Could not update ride status.');
-      }
+      if (error || !data) throw error ?? new Error('Could not update ride status.');
 
-      const updatedBooking = { ...activeBooking, status: config.nextStatus };
-      setActiveBooking(updatedBooking);
-
-      if (config.nextStatus === 'completed') {
-        const fare = activeBooking.estimated_fare ?? 0;
-        setEarningsToday(earningsToday + fare);
-        setTripsToday(tripsToday + 1);
-        setShowCompletionSheet(true);
-      }
+      setActiveBooking({ ...activeBooking, status: config.nextStatus });
+      if (isCompleting) onTripCompleted();
     } catch (err: any) {
       Alert.alert('Error', err.message ?? 'Could not update ride status.');
     } finally {
@@ -159,27 +168,6 @@ export default function ActiveRideScreen() {
     }
   }
 
-  const PLUS_CODE_RE = /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,}$/i;
-  function isPlusCode(v: string) { return PLUS_CODE_RE.test(v.trim()); }
-  function openInMaps(address: string) {
-    Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(address.trim())}`);
-  }
-
-  function navigateTo(address: string) {
-    const encoded = encodeURIComponent(address.trim());
-    // Try Waze first (preferred by drivers), fall back to Google Maps
-    Linking.canOpenURL('waze://').then((wazeAvailable) => {
-      if (wazeAvailable) {
-        Linking.openURL(`waze://?q=${encoded}&navigate=yes`);
-      } else {
-        Linking.openURL(`https://maps.google.com/?q=${encoded}&navigate=yes`);
-      }
-    });
-  }
-
-  // Destination depends on ride status:
-  // accepted/arrived → navigate to pickup
-  // en_route        → navigate to dropoff
   const navigateTarget =
     activeBooking?.status === 'en_route'
       ? activeBooking.dropoff_address
@@ -387,7 +375,7 @@ export default function ActiveRideScreen() {
         </View>
 
         {/* Navigate button */}
-        {navigateTarget && (
+        {!!navigateTarget && (
           <Pressable
             style={({ pressed }) => [styles.navigateBtn, pressed && { opacity: 0.88 }]}
             onPress={() => navigateTo(navigateTarget)}
