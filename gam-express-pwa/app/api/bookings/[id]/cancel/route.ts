@@ -15,11 +15,13 @@ export async function POST(
   }
 
   // Only allow cancel if still pending or accepted
-  const { data: booking } = await supabaseAdmin
+  const { data: bookingData } = await supabaseAdmin
     .from('bookings')
     .select('status')
     .eq('id', bookingId)
     .single();
+
+  const booking = bookingData as { status: string } | null;
 
   if (!booking) {
     return NextResponse.json({ error: 'Booking not found.' }, { status: 404 });
