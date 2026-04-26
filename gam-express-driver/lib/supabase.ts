@@ -2,14 +2,24 @@ import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 
-// Read from EXPO_PUBLIC_ env vars (injected by Metro) or app.config.js extra as fallback
-const supabaseUrl =
-  process.env.EXPO_PUBLIC_SUPABASE_URL ||
-  Constants.expoConfig?.extra?.supabaseUrl;
+// EXPO_PUBLIC_ vars are inlined by Metro at build time.
+// app.config.js extra is the fallback for older SDK / EAS edge cases.
+const supabaseUrl: string =
+  process.env.EXPO_PUBLIC_SUPABASE_URL ??
+  (Constants.expoConfig?.extra?.supabaseUrl as string | undefined) ??
+  '';
 
-const supabaseAnonKey =
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
-  Constants.expoConfig?.extra?.supabaseAnonKey;
+const supabaseAnonKey: string =
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
+  (Constants.expoConfig?.extra?.supabaseAnonKey as string | undefined) ??
+  '';
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    '[Gam Express] Missing Supabase config. ' +
+    'EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY must be set.'
+  );
+}
 
 // Custom storage adapter using expo-secure-store for token persistence
 const ExpoSecureStoreAdapter = {
@@ -80,6 +90,6 @@ export type Booking = {
 /** Converts a Gambian phone number to the internal auth email format */
 export function phoneToEmail(phone: string): string {
   // Strip all non-digits
-  const digits = phone.replace(/\D/g, '');
+  const digits = phone.replaceAll(/\D/g, '');
   return `${digits}@gamexpress.com`;
 }

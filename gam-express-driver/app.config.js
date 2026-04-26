@@ -1,12 +1,15 @@
-// Load .env for local dev (dotenv is a no-op in EAS cloud builds — EAS injects
-// EXPO_PUBLIC_* vars directly as process.env, so this just handles local runs).
-import 'dotenv/config';
+// require() works in both local dev and EAS cloud builds.
+// EXPO_PUBLIC_* vars in eas.json are injected as process.env by EAS,
+// so they are available here during the cloud build without dotenv.
+try { require('dotenv').config(); } catch (e) { console.debug('dotenv not loaded:', e.message); }
 
-export default ({ config }) => ({
-  ...config,
-  extra: {
-    supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
-    supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-    eas: { projectId: config.extra?.eas?.projectId },
-  },
-});
+module.exports = function appConfig({ config }) {
+  return {
+    ...config,
+    extra: {
+      supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
+      supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
+      eas: { projectId: config.extra?.eas?.projectId },
+    },
+  };
+};
