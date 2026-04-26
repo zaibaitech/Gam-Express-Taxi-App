@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   panelContent: {
     padding: 20,
     gap: 16,
-    paddingBottom: 32,
+    paddingBottom: 64,
   },
   customerCard: {
     backgroundColor: '#1A1A2E',

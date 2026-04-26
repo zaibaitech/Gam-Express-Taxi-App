@@ -1,4 +1,4 @@
-import { Tabs, Redirect } from 'expo-router';
+import { Tabs, Redirect, usePathname } from 'expo-router';
 import { Text, View, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDriverStore } from '../../store/driverStore';
@@ -25,6 +25,8 @@ export default function DriverLayout() {
   const driver = useDriverStore((s) => s.driver);
   const activeBooking = useDriverStore((s) => s.activeBooking);
   const insets = useSafeAreaInsets();
+  const pathname = usePathname();
+  const onActiveRide = pathname.includes('active-ride');
 
   if (!driver) {
     return <Redirect href="/(auth)/login" />;
@@ -79,8 +81,8 @@ export default function DriverLayout() {
         />
       </Tabs>
 
-      {/* Active ride floating banner — tappable from anywhere */}
-      {activeBooking && (
+      {/* Active ride floating banner — hidden on the active-ride screen itself */}
+      {activeBooking && !onActiveRide && (
         <Pressable
           style={[styles.activeRideBanner, { bottom: 58 + insets.bottom + 10 }]}
           onPress={() => router.push('/(driver)/active-ride')}
