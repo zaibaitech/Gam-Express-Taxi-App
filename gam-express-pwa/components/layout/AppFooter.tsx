@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 
 export default function AppFooter() {
   return (
@@ -34,8 +35,12 @@ export default function AppFooter() {
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-8 pt-6 text-center text-sm text-gray-500">
+        <div className="border-t border-gray-800 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500">
           <p>&copy; {new Date().getFullYear()} Gam Express Taxi. All rights reserved.</p>
+          <div className="flex gap-4">
+            <Link href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</Link>
+            <Link href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</Link>
+          </div>
         </div>
       </div>
     </footer>
