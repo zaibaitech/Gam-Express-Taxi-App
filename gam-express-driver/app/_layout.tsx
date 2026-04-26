@@ -23,6 +23,8 @@ export default function RootLayout() {
   useEffect(() => {
     // Restore session on mount
     const initAuth = async () => {
+      // 5-second timeout so a network hang never leaves the app on a black screen
+      const timeout = setTimeout(() => setAuthReady(true), 5000);
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) {
@@ -46,6 +48,7 @@ export default function RootLayout() {
       } catch (err) {
         console.error('[Auth] Init error:', err);
       } finally {
+        clearTimeout(timeout);
         setAuthReady(true);
       }
     };

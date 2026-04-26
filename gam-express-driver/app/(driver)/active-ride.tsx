@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useDriverStore } from '../../store/driverStore';
@@ -205,24 +204,6 @@ export default function ActiveRideScreen() {
 
   const statusConfig = STATUS_FLOW[activeBooking.status];
 
-  const pickupLat = activeBooking.pickup_lat;
-  const pickupLng = activeBooking.pickup_lng;
-  const hasCoords = pickupLat !== null && pickupLng !== null;
-
-  const mapRegion = hasCoords
-    ? {
-        latitude: pickupLat,
-        longitude: pickupLng,
-        latitudeDelta: 0.04,
-        longitudeDelta: 0.04,
-      }
-    : {
-        latitude: 13.4549,
-        longitude: -16.579,
-        latitudeDelta: 0.08,
-        longitudeDelta: 0.08,
-      };
-
   const statusLabels: Record<BookingStatus, string> = {
     pending: 'Pending',
     accepted: 'Heading to Pickup',
@@ -234,59 +215,9 @@ export default function ActiveRideScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* Map */}
-      <View style={styles.mapContainer}>
-        <MapView
-          style={styles.map}
-          provider={PROVIDER_DEFAULT}
-          initialRegion={mapRegion}
-          showsUserLocation
-          showsMyLocationButton={false}
-        >
-          {!!(activeBooking.pickup_lat && activeBooking.pickup_lng) && (
-            <Marker
-              coordinate={{
-                latitude: activeBooking.pickup_lat,
-                longitude: activeBooking.pickup_lng,
-              }}
-              title="Pickup"
-              description={activeBooking.pickup_address ?? ''}
-              pinColor="#22C55E"
-            />
-          )}
-
-          {!!(activeBooking.dropoff_lat && activeBooking.dropoff_lng) && (
-            <Marker
-              coordinate={{
-                latitude: activeBooking.dropoff_lat,
-                longitude: activeBooking.dropoff_lng,
-              }}
-              title="Dropoff"
-              description={activeBooking.dropoff_address ?? ''}
-              pinColor="#EF4444"
-            />
-          )}
-
-          {!!(activeBooking.pickup_lat &&
-            activeBooking.pickup_lng &&
-            activeBooking.dropoff_lat &&
-            activeBooking.dropoff_lng) && (
-              <Polyline
-                coordinates={[
-                  { latitude: activeBooking.pickup_lat, longitude: activeBooking.pickup_lng },
-                  { latitude: activeBooking.dropoff_lat, longitude: activeBooking.dropoff_lng },
-                ]}
-                strokeColor="#F5C518"
-                strokeWidth={3}
-                lineDashPattern={[8, 4]}
-              />
-            )}
-        </MapView>
-
-        {/* Status pill overlay */}
-        <View style={styles.statusPill}>
-          <Text style={styles.statusPillText}>{statusLabels[activeBooking.status]}</Text>
-        </View>
+      {/* Status header */}
+      <View style={styles.statusHeader}>
+        <Text style={styles.statusHeaderText}>{statusLabels[activeBooking.status]}</Text>
       </View>
 
       {/* Bottom info panel */}
@@ -462,28 +393,19 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0F0F1A',
   },
-  mapContainer: {
-    height: 280,
-    position: 'relative',
+  statusHeader: {
+    backgroundColor: '#1A1A2E',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: 2,
+    borderBottomColor: '#F5C518',
+    alignItems: 'center',
   },
-  map: {
-    flex: 1,
-  },
-  statusPill: {
-    position: 'absolute',
-    top: 12,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(26,26,46,0.92)',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: '#F5C518',
-  },
-  statusPillText: {
-    fontFamily: 'Inter_500Medium',
-    fontSize: 13,
+  statusHeaderText: {
+    fontFamily: 'Urbanist_700Bold',
+    fontSize: 16,
     color: '#F5C518',
+    letterSpacing: 0.5,
   },
   panel: {
     flex: 1,
