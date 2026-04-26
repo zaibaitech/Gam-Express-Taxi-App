@@ -1,5 +1,6 @@
 import { Tabs, Redirect } from 'expo-router';
 import { Text, View, StyleSheet, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDriverStore } from '../../store/driverStore';
 import { router } from 'expo-router';
 
@@ -23,6 +24,7 @@ function TabIcon({
 export default function DriverLayout() {
   const driver = useDriverStore((s) => s.driver);
   const activeBooking = useDriverStore((s) => s.activeBooking);
+  const insets = useSafeAreaInsets();
 
   if (!driver) {
     return <Redirect href="/(auth)/login" />;
@@ -33,7 +35,7 @@ export default function DriverLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarStyle: styles.tabBar,
+          tabBarStyle: [styles.tabBar, { height: 58 + insets.bottom, paddingBottom: insets.bottom + 6 }],
           tabBarActiveTintColor: '#F5C518',
           tabBarInactiveTintColor: '#6B7280',
           tabBarShowLabel: false,
@@ -51,7 +53,7 @@ export default function DriverLayout() {
           name="earnings"
           options={{
             tabBarIcon: ({ focused }) => (
-              <TabIcon emoji="💰" label="Earnings" focused={focused} />
+              <TabIcon emoji="💰" label="Earn" focused={focused} />
             ),
           }}
         />
@@ -59,7 +61,7 @@ export default function DriverLayout() {
           name="history"
           options={{
             tabBarIcon: ({ focused }) => (
-              <TabIcon emoji="📋" label="History" focused={focused} />
+              <TabIcon emoji="📋" label="Trips" focused={focused} />
             ),
           }}
         />
@@ -67,7 +69,7 @@ export default function DriverLayout() {
           name="profile"
           options={{
             tabBarIcon: ({ focused }) => (
-              <TabIcon emoji="👤" label="Profile" focused={focused} />
+              <TabIcon emoji="👤" label="Me" focused={focused} />
             ),
           }}
         />
@@ -80,7 +82,7 @@ export default function DriverLayout() {
       {/* Active ride floating banner — tappable from anywhere */}
       {activeBooking && (
         <Pressable
-          style={styles.activeRideBanner}
+          style={[styles.activeRideBanner, { bottom: 58 + insets.bottom + 10 }]}
           onPress={() => router.push('/(driver)/active-ride')}
         >
           <View style={styles.activeRidePulse} />
@@ -102,11 +104,12 @@ const styles = StyleSheet.create({
     height: 68,
     paddingBottom: 10,
     paddingTop: 6,
+    elevation: 0,
   },
   tabIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
+    gap: 2,
   },
   tabEmoji: {
     fontSize: 20,
@@ -115,6 +118,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     fontSize: 10,
     color: '#6B7280',
+    includeFontPadding: false,
   },
   tabLabelFocused: {
     color: '#F5C518',
@@ -122,7 +126,6 @@ const styles = StyleSheet.create({
   },
   activeRideBanner: {
     position: 'absolute',
-    bottom: 76,
     left: 16,
     right: 16,
     backgroundColor: '#22C55E',
