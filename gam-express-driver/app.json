@@ -61,6 +61,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "supabaseUrl": "https://eklrewsfvnlwzwttmnmk.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrbHJld3Nmdm5sd3p3dHRtbm1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzOTk0OTYsImV4cCI6MjA4OTk3NTQ5Nn0.ymhcs2Llwdiy15CkL3EIQtUI1YKaGhUHPrwNUecMRIg",
+      "eas": {
+        "projectId": "4a582b59-cc17-4c84-8f1a-7438c2608e73"
+      },
+      "router": {}
+    },
+    "owner": "zaibaitech"
   }
 }
