@@ -83,29 +83,70 @@ function decodePlusCode(code: string): { lat: number; lng: number } | null {
   return { lat: lat + latSize / 2, lng: lng + lngSize / 2 };
 }
 
+// ─── Pricing config (Gambian private-hire, Yango-style) ──────────────────────
+const PRICING = {
+  BASE_FARE:   75,   // GMD — covers driver showing up
+  PER_KM:      25,   // GMD per km
+  PER_MIN:      5,   // GMD per minute (avg city speed ~20 km/h)
+  MINIMUM:     75,   // GMD — no trip below this
+  SURGE_PEAK: 1.3,   // 30 % uplift 07:00–09:00 and 17:00–19:30
+};
+
+/** Average speed assumption used to derive travel time from distance */
+const AVG_SPEED_KMH = 20;
+
+function isSurgePeriod(): boolean {
+  const h = new Date().getHours();
+  const m = new Date().getMinutes();
+  const mins = h * 60 + m;
+  return (mins >= 7 * 60 && mins < 9 * 60) ||
+         (mins >= 17 * 60 && mins < 19 * 60 + 30);
+}
+
+function roundTo5(n: number): number {
+  return Math.round(n / 5) * 5;
+}
+
+export type FareEstimate = {
+  low: number;      // lower bound (GMD)
+  high: number;     // upper bound (GMD)
+  mid: number;      // midpoint shown as headline (GMD)
+  isSurge: boolean;
+  km: number | null;
+};
+
 /**
- * Estimate fare in GMD.
- * Uses haversine distance when both addresses are decodable Plus Codes,
- * otherwise falls back to a fixed mid-range estimate.
+ * Yango-style fare estimate for Gambian private hire.
+ * Returns a price range (low–high) calculated from distance + estimated time.
+ * Works with Plus Code addresses; falls back to a sensible range for text addresses.
  */
 export function calculateEstimatedFare(pickup: string, dropoff: string): number {
-  const BASE_FARE = 50;   // GMD
-  const PER_KM = 15;      // GMD per km
-  const MINIMUM = 50;     // GMD minimum
+  return calculateFareEstimate(pickup, dropoff).mid;
+}
 
+export function calculateFareEstimate(pickup: string, dropoff: string): FareEstimate {
   const p = decodePlusCode(pickup);
   const d = decodePlusCode(dropoff);
+  const surge = isSurgePeriod();
+  const multiplier = surge ? PRICING.SURGE_PEAK : 1;
 
-  let fare: number;
+  let baseMid: number;
+  let km: number | null = null;
+
   if (p && d) {
-    const km = haversineKm(p.lat, p.lng, d.lat, d.lng);
-    fare = BASE_FARE + km * PER_KM;
+    km = haversineKm(p.lat, p.lng, d.lat, d.lng);
+    const mins = (km / AVG_SPEED_KMH) * 60;
+    baseMid = PRICING.BASE_FARE + km * PRICING.PER_KM + mins * PRICING.PER_MIN;
   } else {
-    // Can't calculate — return 0 so the UI shows "Agree on pickup"
-    return 0;
+    // Text address — use a sensible mid-Banjul estimate (≈5 km trip)
+    baseMid = PRICING.BASE_FARE + 5 * PRICING.PER_KM + 15 * PRICING.PER_MIN;
   }
 
-  return Math.max(MINIMUM, Math.round(fare / 5) * 5);
+  const mid  = Math.max(PRICING.MINIMUM, roundTo5(baseMid * multiplier));
+  const low  = Math.max(PRICING.MINIMUM, roundTo5(mid * 0.85));
+  const high = roundTo5(mid * 1.15);
+
+  return { low, mid, high, isSurge: surge, km };
 }
 
 /**

@@ -1,48 +1,83 @@
-import { formatCurrency } from '@/lib/utils';
+import { calculateFareEstimate, formatCurrency } from '@/lib/utils';
 
 interface FareEstimateCardProps {
-  fare: number;
-  pickup?: string;
-  dropoff?: string;
+  readonly fare: number;
+  readonly pickup?: string;
+  readonly dropoff?: string;
 }
 
 export default function FareEstimateCard({ fare, pickup, dropoff }: FareEstimateCardProps) {
-  return (
-    <div className="card bg-gradient-to-br from-primary-50 to-blue-50 border-2 border-primary-200">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-bold text-gray-800">Estimated Fare</h3>
-        <span className="text-2xl">💰</span>
-      </div>
-      
-      <div className="text-center py-4">
-        <div className="text-4xl font-bold text-primary-700 mb-2">
-          {formatCurrency(fare)}
+  const estimate = pickup && dropoff
+    ? calculateFareEstimate(pickup, dropoff)
+    : null;
+
+  if (!fare || fare === 0) {
+    return (
+      <div className="card bg-gray-50 border-2 border-gray-200">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-bold text-gray-800">Fare Estimate</h3>
+          <span className="text-2xl">🚕</span>
         </div>
-        <p className="text-sm text-gray-600">
-          Final fare may vary based on actual distance and time
+        <p className="text-sm text-gray-500">
+          Enter pickup and drop-off to see the estimated fare.
         </p>
       </div>
+    );
+  }
 
-      {pickup && dropoff && (
-        <div className="mt-4 pt-4 border-t border-primary-200">
-          <div className="space-y-2 text-sm">
-            <div className="flex items-start space-x-2">
-              <span className="text-green-600 font-bold mt-0.5">🟢</span>
-              <div>
-                <p className="font-semibold text-gray-700">Pickup</p>
-                <p className="text-gray-600">{pickup}</p>
-              </div>
+  return (
+    <div className="card bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-300">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-lg font-bold text-gray-800">Fare Estimate</h3>
+        <div className="flex items-center gap-2">
+          {estimate?.isSurge && (
+            <span className="text-xs font-bold bg-orange-500 text-white px-2 py-0.5 rounded-full">
+              ⚡ Peak hours
+            </span>
+          )}
+          <span className="text-2xl">🚕</span>
+        </div>
+      </div>
+
+      {/* Price range — headline */}
+      <div className="text-center py-3">
+        {estimate ? (
+          <>
+            <div className="text-3xl font-bold text-yellow-700">
+              {formatCurrency(estimate.low)} – {formatCurrency(estimate.high)}
             </div>
-            <div className="flex items-start space-x-2">
-              <span className="text-red-600 font-bold mt-0.5">🔴</span>
-              <div>
-                <p className="font-semibold text-gray-700">Drop-off</p>
-                <p className="text-gray-600">{dropoff}</p>
-              </div>
-            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              Typical fare · {estimate.km !== null ? `${estimate.km.toFixed(1)} km` : 'distance estimated'}
+            </p>
+          </>
+        ) : (
+          <div className="text-3xl font-bold text-yellow-700">
+            {formatCurrency(fare)}
+          </div>
+        )}
+      </div>
+
+      {/* Breakdown */}
+      {estimate && (
+        <div className="mt-3 pt-3 border-t border-yellow-200 grid grid-cols-3 text-center text-xs text-gray-600 gap-2">
+          <div>
+            <p className="font-semibold text-gray-800">Base</p>
+            <p>GMD 75</p>
+          </div>
+          <div>
+            <p className="font-semibold text-gray-800">Per km</p>
+            <p>GMD 25</p>
+          </div>
+          <div>
+            <p className="font-semibold text-gray-800">Per min</p>
+            <p>GMD 5</p>
           </div>
         </div>
       )}
+
+      <p className="text-xs text-gray-400 mt-3 text-center">
+        Final fare agreed with driver · Cash or Mobile Money
+      </p>
     </div>
   );
 }
