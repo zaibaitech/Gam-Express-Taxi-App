@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { generateBookingId, calculateEstimatedFare, isValidPhoneNumber, isPlusCode, normalisePlusCode, plusCodeMapsUrl } from '@/lib/utils';
+import { generateBookingId, calculateEstimatedFare, isValidPhoneNumber, isPlusCode, normalisePlusCode } from '@/lib/utils';
 import FareEstimateCard from '@/components/booking/FareEstimateCard';
 import PaymentMethodSelector from '@/components/booking/PaymentMethodSelector';
+import LocationInput from '@/components/booking/LocationInput';
 
 export default function BookingPage() {
   const router = useRouter();
@@ -143,75 +144,24 @@ export default function BookingPage() {
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center space-x-2">
                   <span>🗺️</span><span>Trip Details</span>
                 </h2>
-                {/* Plus Code info banner */}
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-3 mb-2">
-                  <span className="text-xl mt-0.5">📍</span>
-                  <div className="text-sm text-amber-800">
-                    <span className="font-semibold">Tip:</span> You can use a{' '}
-                    <span className="font-semibold">Plus Code</span> (e.g. <span className="font-mono">796RWF8Q+WF</span>) — the main addressing system in The Gambia.{' '}
-                    <a
-                      href="https://maps.google.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline font-semibold text-amber-900"
-                    >
-                      Find your code on Google Maps →
-                    </a>
-                  </div>
-                </div>
-
                 <div className="space-y-4">
-                  <div>
-                    <label htmlFor="pickupLocation" className="label">Where should we pick you up? *</label>
-                    <input
-                      type="text" id="pickupLocation" name="pickupLocation"
-                      value={formData.pickupLocation} onChange={handleChange}
-                      placeholder="Plus Code (796RWF8Q+WF) or place name"
-                      className={`input-field font-mono ${errors.pickupLocation ? 'border-red-500' : ''}`}
-                      autoCapitalize="characters"
-                      spellCheck={false}
-                    />
-                    {errors.pickupLocation && <p className="text-red-600 text-sm mt-1">{errors.pickupLocation}</p>}
-                    {isPlusCode(formData.pickupLocation) && (
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-green-600 text-sm font-semibold">✓ Valid Plus Code</span>
-                        <a
-                          href={plusCodeMapsUrl(normalisePlusCode(formData.pickupLocation))}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-600 underline"
-                        >
-                          Preview on map →
-                        </a>
-                      </div>
-                    )}
-                  </div>
+                  <LocationInput
+                    id="pickupLocation"
+                    label="Where should we pick you up? *"
+                    placeholder="Type area/street, use 📍 for GPS, or paste Plus Code"
+                    value={formData.pickupLocation}
+                    error={errors.pickupLocation}
+                    onChange={(v) => setFormData(prev => ({ ...prev, pickupLocation: v }))}
+                  />
 
-                  <div>
-                    <label htmlFor="dropoffLocation" className="label">Where are you going? *</label>
-                    <input
-                      type="text" id="dropoffLocation" name="dropoffLocation"
-                      value={formData.dropoffLocation} onChange={handleChange}
-                      placeholder="Plus Code (796RWF8Q+WF) or place name"
-                      className={`input-field font-mono ${errors.dropoffLocation ? 'border-red-500' : ''}`}
-                      autoCapitalize="characters"
-                      spellCheck={false}
-                    />
-                    {errors.dropoffLocation && <p className="text-red-600 text-sm mt-1">{errors.dropoffLocation}</p>}
-                    {isPlusCode(formData.dropoffLocation) && (
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-green-600 text-sm font-semibold">✓ Valid Plus Code</span>
-                        <a
-                          href={plusCodeMapsUrl(normalisePlusCode(formData.dropoffLocation))}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-600 underline"
-                        >
-                          Preview on map →
-                        </a>
-                      </div>
-                    )}
-                  </div>
+                  <LocationInput
+                    id="dropoffLocation"
+                    label="Where are you going? *"
+                    placeholder="Type area/street, use 📍 for GPS, or paste Plus Code"
+                    value={formData.dropoffLocation}
+                    error={errors.dropoffLocation}
+                    onChange={(v) => setFormData(prev => ({ ...prev, dropoffLocation: v }))}
+                  />
 
                   <div>
                     <label htmlFor="pickupTime" className="label">When do you need the taxi? *</label>
