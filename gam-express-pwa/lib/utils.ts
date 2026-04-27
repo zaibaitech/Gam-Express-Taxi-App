@@ -85,10 +85,10 @@ function decodePlusCode(code: string): { lat: number; lng: number } | null {
 
 // ─── Pricing config (Gambian private-hire, Yango-style) ──────────────────────
 const PRICING = {
-  BASE_FARE:   75,   // GMD — covers driver showing up
-  PER_KM:      25,   // GMD per km
-  PER_MIN:      5,   // GMD per minute (avg city speed ~20 km/h)
-  MINIMUM:     75,   // GMD — no trip below this
+  BASE_FARE:  250,   // GMD — covers driver showing up
+  PER_KM:      60,   // GMD per km
+  PER_MIN:     10,   // GMD per minute (avg city speed ~20 km/h)
+  MINIMUM:    400,   // GMD — no trip below this (Gambian private hire floor)
   SURGE_PEAK: 1.3,   // 30 % uplift 07:00–09:00 and 17:00–19:30
 };
 

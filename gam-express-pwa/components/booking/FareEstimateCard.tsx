@@ -47,7 +47,7 @@ export default function FareEstimateCard({ fare, pickup, dropoff }: FareEstimate
               {formatCurrency(estimate.low)} – {formatCurrency(estimate.high)}
             </div>
             <p className="text-sm text-gray-500 mt-1">
-              Typical fare · {estimate.km !== null ? `${estimate.km.toFixed(1)} km` : 'distance estimated'}
+              Typical fare · {estimate.km === null ? 'distance estimated' : `${estimate.km.toFixed(1)} km`}
             </p>
           </>
         ) : (
@@ -62,15 +62,15 @@ export default function FareEstimateCard({ fare, pickup, dropoff }: FareEstimate
         <div className="mt-3 pt-3 border-t border-yellow-200 grid grid-cols-3 text-center text-xs text-gray-600 gap-2">
           <div>
             <p className="font-semibold text-gray-800">Base</p>
-            <p>GMD 75</p>
+            <p>GMD 250</p>
           </div>
           <div>
             <p className="font-semibold text-gray-800">Per km</p>
-            <p>GMD 25</p>
+            <p>GMD 60</p>
           </div>
           <div>
             <p className="font-semibold text-gray-800">Per min</p>
-            <p>GMD 5</p>
+            <p>GMD 10</p>
           </div>
         </div>
       )}
