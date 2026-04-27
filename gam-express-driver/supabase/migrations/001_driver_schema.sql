@@ -60,7 +60,9 @@ ALTER TABLE public.bookings
   ADD COLUMN IF NOT EXISTS pickup_lng          FLOAT8,
   ADD COLUMN IF NOT EXISTS dropoff_lat         FLOAT8,
   ADD COLUMN IF NOT EXISTS dropoff_lng         FLOAT8,
-  ADD COLUMN IF NOT EXISTS booking_reference   TEXT UNIQUE;
+  ADD COLUMN IF NOT EXISTS booking_reference   TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS notes               TEXT,
+  ADD COLUMN IF NOT EXISTS rating              SMALLINT CHECK (rating BETWEEN 1 AND 5);
 
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 

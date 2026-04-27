@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { booking_reference, customer_name, customer_phone, pickup_address, dropoff_address, estimated_fare, payment_method } = body;
+  const { booking_reference, customer_name, customer_phone, pickup_address, dropoff_address, estimated_fare, payment_method, notes } = body;
 
   if (!booking_reference || !customer_name || !customer_phone || !pickup_address || !dropoff_address) {
     return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
@@ -29,6 +29,7 @@ export async function POST(request: Request) {
       dropoff_address,
       estimated_fare: estimated_fare || null,
       payment_method,
+      notes: notes || null,
       driver_id: null,
     })
     .select('id, booking_reference')

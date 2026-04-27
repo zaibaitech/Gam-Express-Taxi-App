@@ -83,6 +83,8 @@ export type Booking = {
   dropoff_lat: number | null;
   dropoff_lng: number | null;
   booking_reference: string | null;
+  notes: string | null;
+  rating: number | null;
 };
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────

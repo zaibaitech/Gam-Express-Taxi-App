@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
 import type { Booking } from '../lib/supabase';
 
 const PLUS_CODE_RE = /^[23456789CFGHJMPQRVWX]{4,8}\+[23456789CFGHJMPQRVWX]{2,}$/i;
@@ -33,12 +34,27 @@ type Props = {
 
 export function IncomingRideModal({ booking, onAccept, onDecline }: Props) {
   const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_SECONDS);
-  const slideAnim = useRef(new Animated.Value(400)).current; // starts off-screen below
+  const slideAnim = useRef(new Animated.Value(400)).current;
+  const soundRef = useRef<Audio.Sound | null>(null);
 
-  // Slide up on mount + haptic
+  // Slide up on mount + haptic + sound
   useEffect(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    Vibration.vibrate([0, 300, 100, 300]);
+    // Repeat vibration pattern every 3 seconds while modal is open
+    const vibInterval = setInterval(() => {
+      Vibration.vibrate([0, 400, 200, 400]);
+    }, 3000);
+    Vibration.vibrate([0, 400, 200, 400]);
+
+    // Play alert sound
+    Audio.setAudioModeAsync({ playsInSilentModeIOS: true }).then(() => {
+      Audio.Sound.createAsync(
+        require('../assets/ride-alert.mp3'),
+        { shouldPlay: true, isLooping: true, volume: 1.0 }
+      ).then(({ sound }) => {
+        soundRef.current = sound;
+      });
+    });
 
     Animated.spring(slideAnim, {
       toValue: 0,
@@ -46,6 +62,12 @@ export function IncomingRideModal({ booking, onAccept, onDecline }: Props) {
       tension: 70,
       friction: 10,
     }).start();
+
+    return () => {
+      clearInterval(vibInterval);
+      Vibration.cancel();
+      soundRef.current?.unloadAsync();
+    };
   }, []);
 
   // Countdown timer
@@ -143,18 +165,26 @@ export function IncomingRideModal({ booking, onAccept, onDecline }: Props) {
             </View>
           </View>
 
+          {/* Passenger notes */}
+          {!!booking.notes && (
+            <View style={styles.notesBanner}>
+              <Text style={styles.notesIcon}>📝</Text>
+              <Text style={styles.notesText}>{booking.notes}</Text>
+            </View>
+          )}
+
           {/* Action buttons */}
           <View style={styles.actions}>
             <Pressable
               style={({ pressed }) => [styles.declineBtn, pressed && { opacity: 0.8 }]}
-              onPress={onDecline}
+              onPress={() => { soundRef.current?.unloadAsync(); onDecline(); }}
             >
               <Text style={styles.declineBtnText}>❌  DECLINE</Text>
             </Pressable>
 
             <Pressable
               style={({ pressed }) => [styles.acceptBtn, pressed && { opacity: 0.88 }]}
-              onPress={() => onAccept(booking)}
+              onPress={() => { soundRef.current?.unloadAsync(); onAccept(booking); }}
             >
               <Text style={styles.acceptBtnText}>✅  ACCEPT</Text>
             </Pressable>
@@ -283,11 +313,32 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 2,
   },
+  notesBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(245,197,24,0.08)',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 14,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(245,197,24,0.2)',
+  },
+  notesIcon: {
+    fontSize: 16,
+  },
+  notesText: {
+    flex: 1,
+    fontFamily: 'Inter_400Regular',
+    fontSize: 13,
+    color: '#D1A800',
+    lineHeight: 18,
+  },
   fareRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 14,
   },
   fareItem: {},
   fareLabel: {

@@ -53,8 +53,15 @@ export function TripCard({ booking }: Props) {
       {/* Footer */}
       <View style={styles.footerRow}>
         <Text style={styles.date}>{formatDate(booking.completed_at)}</Text>
-        <View style={styles.paymentBadge}>
-          <Text style={styles.paymentText}>{paymentLabel}</Text>
+        <View style={styles.rightBadges}>
+          {booking.rating !== null && (
+            <View style={styles.ratingBadge}>
+              <Text style={styles.ratingText}>{'⭐'.repeat(booking.rating)} {booking.rating}/5</Text>
+            </View>
+          )}
+          <View style={styles.paymentBadge}>
+            <Text style={styles.paymentText}>{paymentLabel}</Text>
+          </View>
         </View>
       </View>
     </View>
@@ -122,6 +129,24 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     fontSize: 12,
     color: '#9CA3AF',
+  },
+  rightBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  ratingBadge: {
+    backgroundColor: 'rgba(245,197,24,0.12)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(245,197,24,0.3)',
+  },
+  ratingText: {
+    fontFamily: 'Inter_500Medium',
+    fontSize: 11,
+    color: '#F5C518',
   },
   paymentBadge: {
     backgroundColor: 'rgba(245,197,24,0.08)',

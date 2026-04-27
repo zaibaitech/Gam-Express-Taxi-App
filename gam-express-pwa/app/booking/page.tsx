@@ -90,6 +90,7 @@ export default function BookingPage() {
           dropoff_address: dropoff,
           estimated_fare: estimatedFare || null,
           payment_method: formData.paymentMethod,
+          notes: formData.notes.trim() || null,
         }),
       });
 
@@ -110,8 +111,9 @@ export default function BookingPage() {
       }));
 
       router.push('/confirmation');
-    } catch (err: any) {
-      setSubmitError('Could not submit your booking. Please check your connection and try again.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : null;
+      setSubmitError(msg ?? 'Could not submit your booking. Please check your connection and try again.');
     } finally {
       setIsSubmitting(false);
     }
