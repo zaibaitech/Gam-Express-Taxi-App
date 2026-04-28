@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Linking,
+  Image,
 } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -202,9 +203,16 @@ export default function HomeScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Hey, {driver?.full_name?.split(' ')[0]} 👋</Text>
-            <Text style={styles.vehicleTag}>{driver?.vehicle_plate} · {driver?.vehicle_model}</Text>
+          <View style={styles.headerLeft}>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
+            <View>
+              <Text style={styles.greeting}>Hey, {driver?.full_name?.split(' ')[0]} 👋</Text>
+              <Text style={styles.vehicleTag}>{driver?.vehicle_plate} · {driver?.vehicle_model}</Text>
+            </View>
           </View>
           <View style={[styles.statusBadge, isOnline ? styles.statusBadgeOnline : styles.statusBadgeOffline]}>
             <Text style={styles.statusBadgeText}>{isOnline ? 'ONLINE' : 'OFFLINE'}</Text>
@@ -319,9 +327,19 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingTop: 16,
     marginBottom: 8,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerLogo: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
   },
   greeting: {
     fontFamily: 'Urbanist_700Bold',

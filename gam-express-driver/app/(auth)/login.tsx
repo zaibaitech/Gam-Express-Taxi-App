@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
@@ -145,9 +146,11 @@ export default function LoginScreen() {
         >
           {/* Brand */}
           <View style={styles.brandSection}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoText}>🚕</Text>
-            </View>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={styles.brandName}>Gam Express</Text>
             <Text style={styles.brandSub}>Driver App</Text>
           </View>
@@ -260,17 +263,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 36,
   },
-  logoCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#F5C518',
-    alignItems: 'center',
-    justifyContent: 'center',
+  logo: {
+    width: 100,
+    height: 100,
+    borderRadius: 24,
     marginBottom: 16,
-  },
-  logoText: {
-    fontSize: 48,
   },
   brandName: {
     fontFamily: 'Urbanist_700Bold',
