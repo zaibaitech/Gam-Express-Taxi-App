@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { View, ActivityIndicator } from 'react-native';
 import { Urbanist_700Bold, Urbanist_600SemiBold } from '@expo-google-fonts/urbanist';
 import { Inter_400Regular, Inter_500Medium } from '@expo-google-fonts/inter';
+import * as Notifications from 'expo-notifications';
 import { supabase } from '../lib/supabase';
+import { registerPushToken } from '../lib/notifications';
 import { useDriverStore } from '../store/driverStore';
-import type { Driver } from '../lib/supabase';
+import type { Driver, Booking } from '../lib/supabase';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -18,7 +20,22 @@ export default function RootLayout() {
   });
 
   const setDriver = useDriverStore((s) => s.setDriver);
+  const setIncomingBooking = useDriverStore((s) => s.setIncomingBooking);
   const [authReady, setAuthReady] = useState(false);
+
+  async function loadDriver(userId: string) {
+    const { data, error } = await supabase
+      .from('drivers')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    if (!error && data) {
+      setDriver(data as Driver);
+      registerPushToken(userId).catch(() => {});
+    } else if (error) {
+      console.error('[Drivers] Query error:', error);
+    }
+  }
 
   useEffect(() => {
     // Restore session on mount
@@ -31,16 +48,7 @@ export default function RootLayout() {
           console.error('[Auth] Session error:', sessionError);
         } else if (session?.user) {
           try {
-            const { data, error } = await supabase
-              .from('drivers')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-            if (error) {
-              console.error('[Drivers] Query error:', error);
-            } else if (data) {
-              setDriver(data as Driver);
-            }
+            await loadDriver(session.user.id);
           } catch (err) {
             console.error('[Drivers] Exception:', err);
           }
@@ -62,16 +70,7 @@ export default function RootLayout() {
           setDriver(null);
         } else if (session?.user) {
           try {
-            const { data, error } = await supabase
-              .from('drivers')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-            if (error) {
-              console.error('[Drivers] Query error on auth change:', error);
-            } else if (data) {
-              setDriver(data as Driver);
-            }
+            await loadDriver(session.user.id);
           } catch (err) {
             console.error('[Drivers] Exception on auth change:', err);
           }
@@ -81,6 +80,29 @@ export default function RootLayout() {
 
     return () => subscription.unsubscribe();
   }, [setDriver]);
+
+  // Handle notification taps — works when app is backgrounded or killed
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener(async (response) => {
+      const bookingId = response.notification.request.content.data?.bookingId as string | undefined;
+      if (!bookingId) return;
+
+      const { data } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('id', bookingId)
+        .eq('status', 'pending')
+        .is('driver_id', null)
+        .single();
+
+      if (data) {
+        setIncomingBooking(data as Booking);
+        router.replace('/(driver)/home');
+      }
+    });
+
+    return () => sub.remove();
+  }, [setIncomingBooking]);
 
   if (!fontsLoaded || !authReady) {
     return (
