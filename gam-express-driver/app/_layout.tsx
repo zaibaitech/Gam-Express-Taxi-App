@@ -31,7 +31,9 @@ export default function RootLayout() {
       .single();
     if (!error && data) {
       setDriver(data as Driver);
-      registerPushToken(userId).catch(() => {});
+      registerPushToken(userId).catch((err) => {
+        console.error('[Notifications] registerPushToken failed', err);
+      });
     } else if (error) {
       console.error('[Drivers] Query error:', error);
     }

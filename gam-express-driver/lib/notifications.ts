@@ -23,14 +23,27 @@ export async function registerPushToken(driverId: string): Promise<void> {
     status = asked;
   }
 
-  if (status !== 'granted') return;
+  if (status !== 'granted') {
+    console.warn('[Notifications] Permission not granted for push notifications');
+    return;
+  }
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-  if (!projectId) return;
+  if (!projectId) {
+    console.error('[Notifications] Missing EAS projectId for push token retrieval');
+    return;
+  }
 
   const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
+  if (!token) {
+    console.error('[Notifications] Expo push token was not returned');
+    return;
+  }
 
-  await supabase.from('drivers').update({ push_token: token }).eq('id', driverId);
+  const { error } = await supabase.from('drivers').update({ push_token: token }).eq('id', driverId);
+  if (error) {
+    console.error('[Notifications] Failed to save push token for driver', error);
+  }
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('ride-requests', {

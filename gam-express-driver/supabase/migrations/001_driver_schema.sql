@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS public.drivers (
   vehicle_plate   TEXT NOT NULL,
   vehicle_model   TEXT NOT NULL,
   is_online       BOOLEAN NOT NULL DEFAULT FALSE,
+  push_token      TEXT,
   current_lat     FLOAT8,
   current_lng     FLOAT8,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()

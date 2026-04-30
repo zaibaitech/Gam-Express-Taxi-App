@@ -19,7 +19,7 @@ export default function HistoryScreen() {
   const driver = useDriverStore((s) => s.driver);
   const [trips, setTrips] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<Filter>('today');
+  const [filter, setFilter] = useState<Filter>('week');
 
   useEffect(() => {
     fetchTrips();
@@ -52,6 +52,12 @@ export default function HistoryScreen() {
   }
 
   const totalEarnings = trips.reduce((sum, b) => sum + (b.estimated_fare ?? 0), 0);
+
+  function emptySubtext(f: Filter) {
+    if (f === 'today') return 'No trips today — go online to start earning!';
+    if (f === 'week') return 'No trips this week — go online to start earning!';
+    return 'No trips found for this period.';
+  }
 
   const FILTERS: { key: Filter; label: string }[] = [
     { key: 'today', label: 'Today' },
@@ -110,7 +116,7 @@ export default function HistoryScreen() {
           <Text style={styles.emptyEmoji}>📋</Text>
           <Text style={styles.emptyText}>No completed trips yet</Text>
           <Text style={styles.emptySubtext}>
-            {filter === 'today' ? 'No trips today — go online to start earning!' : 'No trips found for this period.'}
+            {emptySubtext(filter)}
           </Text>
         </View>
       ) : (
