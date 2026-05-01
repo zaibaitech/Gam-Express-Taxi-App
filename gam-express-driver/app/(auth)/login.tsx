@@ -41,13 +41,15 @@ export default function LoginScreen() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        let msg = 'Incorrect phone number or password.';
-        if (error.message.includes('Invalid login')) {
-          msg = 'Incorrect phone number or password.';
-        } else if (error.message.includes('Email not confirmed')) {
-          msg = 'Account not confirmed. Contact your manager.';
-        }
+        const msg = error.message.includes('Email not confirmed')
+          ? 'Account not confirmed. Contact your manager.'
+          : 'Incorrect phone number or password.';
         Alert.alert('Login failed', msg);
+        return;
+      }
+
+      if (!data.user) {
+        Alert.alert('Login failed', 'Could not retrieve account. Please try again.');
         return;
       }
 
@@ -65,6 +67,8 @@ export default function LoginScreen() {
 
       setDriver(driverData as Driver);
       router.replace('/(driver)/home');
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
