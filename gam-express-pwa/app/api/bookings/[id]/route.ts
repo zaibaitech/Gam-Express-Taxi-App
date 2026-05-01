@@ -54,7 +54,7 @@ export async function GET(
   if (booking.driver_id) {
     const { data: driverData } = await supabaseAdmin
       .from('drivers')
-      .select('full_name, vehicle_plate, vehicle_model, phone')
+      .select('full_name, vehicle_plate, vehicle_model, phone, current_lat, current_lng')
       .eq('id', booking.driver_id)
       .single();
     driver = driverData;

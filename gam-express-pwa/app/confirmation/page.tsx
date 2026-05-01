@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { formatCurrency } from '@/lib/utils';
@@ -12,6 +12,8 @@ interface DriverInfo {
   vehicle_plate: string;
   vehicle_model: string;
   phone: string;
+  current_lat: number | null;
+  current_lng: number | null;
 }
 
 interface BookingInfo {
@@ -63,6 +65,7 @@ export default function ConfirmationPage() {
   const [rating, setRating] = useState<number | null>(null);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [submittingRating, setSubmittingRating] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Resolve booking ID: prefer ?id= URL param, fall back to sessionStorage
   const resolveId = useCallback((): string | null => {
@@ -78,6 +81,8 @@ export default function ConfirmationPage() {
     return null;
   }, [searchParams]);
 
+  const TERMINAL: LiveStatus[] = ['completed', 'cancelled'];
+
   const fetchBooking = useCallback(async (id: string) => {
     try {
       const res = await fetch(`/api/bookings/${id}`);
@@ -86,6 +91,11 @@ export default function ConfirmationPage() {
       const data = await res.json() as BookingInfo;
       setBooking(data);
       setLoading(false);
+      // Stop polling once ride reaches a terminal state
+      if (TERMINAL.includes(data.status) && intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     } catch { /* network error — keep polling */ }
   }, []);
 
@@ -100,16 +110,11 @@ export default function ConfirmationPage() {
 
     fetchBooking(id);
 
-    const interval = setInterval(() => fetchBooking(id), 5000);
-    return () => clearInterval(interval);
+    intervalRef.current = setInterval(() => fetchBooking(id), 5000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [resolveId, fetchBooking, router, searchParams]);
-
-  // Stop polling once terminal
-  useEffect(() => {
-    if (booking?.status === 'completed' || booking?.status === 'cancelled') {
-      // Interval cleared automatically by cleanup above on next render cycle
-    }
-  }, [booking?.status]);
 
   async function handleCancel() {
     if (!booking) return;
@@ -300,7 +305,7 @@ export default function ConfirmationPage() {
                 📞 Call Driver
               </a>
               <a
-                href={`https://wa.me/${booking.driver.phone.replaceAll(/\D/g, '')}`}
+                href={`https://wa.me/${booking.driver.phone.replace(/\D/g, '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm py-3 rounded-xl transition-colors"
@@ -309,6 +314,25 @@ export default function ConfirmationPage() {
               </a>
             </div>
           </div>
+        )}
+
+        {/* Driver Live Location */}
+        {booking.driver?.current_lat && booking.driver?.current_lng && !isCompleted && !isCancelled && (
+          <a
+            href={`https://maps.google.com/?q=${booking.driver.current_lat},${booking.driver.current_lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-4 bg-white rounded-2xl border border-amber-300 p-5 hover:bg-amber-50 transition-colors"
+          >
+            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-2xl shrink-0">
+              📍
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-gray-900 text-sm">Track Driver on Map</p>
+              <p className="text-xs text-gray-500 mt-0.5">Tap to open live location in Google Maps</p>
+            </div>
+            <span className="text-amber-500 text-lg">›</span>
+          </a>
         )}
 
         {/* Trip Details */}
