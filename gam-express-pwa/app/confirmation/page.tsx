@@ -48,7 +48,7 @@ const STATUS_HERO: Record<LiveStatus, { bg: string; border: string; text: string
   cancelled: { bg: 'bg-red-50',    border: 'border-red-400',    text: 'Booking Cancelled',       subtext: 'This booking has been cancelled. Book again if you still need a ride.', pulse: false },
 };
 
-const CANCEL_ALLOWED: LiveStatus[] = ['pending', 'accepted'];
+const CANCEL_ALLOWED = new Set<LiveStatus>(['pending', 'accepted']);
 
 function stepIndex(status: LiveStatus) {
   return STATUS_ORDER.indexOf(status);
@@ -81,7 +81,7 @@ export default function ConfirmationPage() {
     return null;
   }, [searchParams]);
 
-  const TERMINAL: LiveStatus[] = ['completed', 'cancelled'];
+  const TERMINAL = new Set<LiveStatus>(['completed', 'cancelled']);
 
   const fetchBooking = useCallback(async (id: string) => {
     try {
@@ -92,7 +92,7 @@ export default function ConfirmationPage() {
       setBooking(data);
       setLoading(false);
       // Stop polling once ride reaches a terminal state
-      if (TERMINAL.includes(data.status) && intervalRef.current) {
+      if (TERMINAL.has(data.status) && intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
@@ -176,7 +176,9 @@ export default function ConfirmationPage() {
   const currentStep = stepIndex(booking.status);
   const isCancelled = booking.status === 'cancelled';
   const isCompleted = booking.status === 'completed';
-  const canCancel = CANCEL_ALLOWED.includes(booking.status);
+  const canCancel = CANCEL_ALLOWED.has(booking.status);
+  const shareUrl = typeof globalThis.window !== 'undefined' ? globalThis.window.location.href : '';
+  const whatsappHref = `https://wa.me/?text=${encodeURIComponent(`Track my Gam Express ride 🚕\nRef: ${booking.booking_reference}\n${shareUrl}`)}`;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -274,7 +276,7 @@ export default function ConfirmationPage() {
                       )}
                     </div>
                     <div className="pt-1 pb-8">
-                      <p className={`text-sm font-semibold ${active ? 'text-amber-700' : done ? 'text-green-700' : 'text-gray-400'}`}>
+                      <p className={`text-sm font-semibold ${active ? 'text-amber-700' : (done ? 'text-green-700' : 'text-gray-400')}`}>
                         {step.label}
                       </p>
                       {active && <p className="text-xs text-gray-500 mt-0.5">In progress...</p>}
@@ -305,7 +307,7 @@ export default function ConfirmationPage() {
                 📞 Call Driver
               </a>
               <a
-                href={`https://wa.me/${booking.driver.phone.replace(/\D/g, '')}`}
+                href={`https://wa.me/${booking.driver.phone.replaceAll(/\D/g, '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold text-sm py-3 rounded-xl transition-colors"
@@ -401,6 +403,18 @@ export default function ConfirmationPage() {
           >
             {cancelling ? 'Cancelling...' : '✕ Cancel This Booking'}
           </button>
+        )}
+
+        {/* Share via WhatsApp */}
+        {!isCompleted && !isCancelled && (
+          <a
+            href={whatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold text-sm transition-colors"
+          >
+            💬 Share Ride on WhatsApp
+          </a>
         )}
 
         {/* Actions */}

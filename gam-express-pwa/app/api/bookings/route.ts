@@ -17,6 +17,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
   }
 
+  // Return existing pending booking if same phone submitted within 30 minutes
+  const windowStart = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+  const { data: existing } = await (supabaseAdmin as any)
+    .from('bookings')
+    .select('id, booking_reference')
+    .eq('customer_phone', customer_phone)
+    .eq('status', 'pending')
+    .gte('created_at', windowStart)
+    .maybeSingle();
+
+  if (existing) {
+    return NextResponse.json({
+      id: existing.id,
+      booking_reference: existing.booking_reference,
+      duplicate: true,
+    });
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabaseAdmin as any)
     .from('bookings')
