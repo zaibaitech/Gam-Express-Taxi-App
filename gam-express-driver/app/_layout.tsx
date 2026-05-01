@@ -83,26 +83,34 @@ export default function RootLayout() {
     return () => subscription.unsubscribe();
   }, [setDriver]);
 
-  // Handle notification taps — works when app is backgrounded or killed
+  // Handle notification taps — covers background taps and cold-launch from killed state
+  async function handleNotificationResponse(response: Notifications.NotificationResponse) {
+    const bookingId = response.notification.request.content.data?.bookingId as string | undefined;
+    if (!bookingId) return;
+
+    const { data } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('id', bookingId)
+      .eq('status', 'pending')
+      .is('driver_id', null)
+      .single();
+
+    if (data) {
+      setIncomingBooking(data as Booking);
+      router.replace('/(driver)/home');
+    }
+  }
+
+  // Cold-launch: app was killed, user tapped the notification to open it
+  const lastResponse = Notifications.useLastNotificationResponse();
   useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener(async (response) => {
-      const bookingId = response.notification.request.content.data?.bookingId as string | undefined;
-      if (!bookingId) return;
+    if (lastResponse) handleNotificationResponse(lastResponse);
+  }, [lastResponse]);
 
-      const { data } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('id', bookingId)
-        .eq('status', 'pending')
-        .is('driver_id', null)
-        .single();
-
-      if (data) {
-        setIncomingBooking(data as Booking);
-        router.replace('/(driver)/home');
-      }
-    });
-
+  useEffect(() => {
+    // Background/foreground taps
+    const sub = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
     return () => sub.remove();
   }, [setIncomingBooking]);
 
