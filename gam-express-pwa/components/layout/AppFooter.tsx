@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { SUPPORT_PHONE_DISPLAY, SUPPORT_EMAIL, COMPANY_LOCATION } from '@/lib/config';
+import { SUPPORT_PHONE_DISPLAY, SUPPORT_WHATSAPP, SUPPORT_EMAIL, COMPANY_LOCATION } from '@/lib/config';
 
 export default function AppFooter() {
   return (
@@ -19,7 +19,11 @@ export default function AppFooter() {
           <div>
             <h4 className="text-white font-semibold mb-3">Contact Us</h4>
             <ul className="space-y-2 text-sm">
-              <li>📞 Phone: {SUPPORT_PHONE_DISPLAY}</li>
+              <li>
+                <a href={SUPPORT_WHATSAPP} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  💬 WhatsApp: {SUPPORT_PHONE_DISPLAY}
+                </a>
+              </li>
               <li>📧 Email: {SUPPORT_EMAIL}</li>
               <li>📍 Location: {COMPANY_LOCATION}</li>
             </ul>

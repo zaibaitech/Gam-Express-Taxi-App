@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@/lib/config';
+import { SUPPORT_WHATSAPP, SUPPORT_PHONE_DISPLAY } from '@/lib/config';
 
 export default function HeroSection() {
   return (
@@ -51,7 +51,7 @@ export default function HeroSection() {
           {/* Secondary CTA */}
           <p className="mt-6 text-blue-100">
             Or call us at{' '}
-            <a href={`tel:${SUPPORT_PHONE}`} className="font-bold text-accent-300 hover:underline">
+            <a href={SUPPORT_WHATSAPP} target="_blank" rel="noopener noreferrer" className="font-bold text-accent-300 hover:underline">
               {SUPPORT_PHONE_DISPLAY}
             </a>
           </p>

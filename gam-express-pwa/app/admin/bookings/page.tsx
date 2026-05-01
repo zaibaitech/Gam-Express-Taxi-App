@@ -240,17 +240,29 @@ export default function AdminBookingsPage() {
           className="flex-1 bg-gray-900 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-yellow-400"
         />
         <div className="flex gap-1 flex-wrap">
-          {FILTERS.map(f => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                filter === f.key ? 'bg-yellow-400 text-gray-900' : 'bg-gray-800 text-gray-400 hover:text-white'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
+          {FILTERS.map(f => {
+            const count = f.key === 'pending'
+              ? bookings.filter(b => b.status === 'pending').length
+              : null;
+            return (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                  filter === f.key ? 'bg-yellow-400 text-gray-900' : 'bg-gray-800 text-gray-400 hover:text-white'
+                }`}
+              >
+                {f.label}
+                {count !== null && count > 0 && (
+                  <span className={`text-xs font-bold rounded-full px-1.5 py-0.5 ${
+                    filter === f.key ? 'bg-gray-900 text-yellow-400' : 'bg-yellow-500 text-gray-900'
+                  }`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 

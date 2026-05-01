@@ -279,13 +279,15 @@ export default function HomeScreen() {
           <View style={styles.ratingCard}>
             <Text style={styles.ratingEmoji}>⭐</Text>
             <Text style={styles.ratingValue}>
-              {rating !== null ? rating.toFixed(1) : '—'}
+              {rating !== null ? rating.toFixed(1) : 'New'}
             </Text>
-            <Text style={styles.ratingLabel}>Your Rating</Text>
+            <Text style={styles.ratingLabel}>
+              {rating !== null ? 'Your Rating' : 'No ratings yet'}
+            </Text>
           </View>
           <Pressable
             style={({ pressed }) => [styles.supportCard, pressed && { opacity: 0.8 }]}
-            onPress={() => Linking.openURL('tel:+2203456789')}
+            onPress={() => Linking.openURL('https://wa.me/2203456789')}
           >
             <Text style={styles.supportEmoji}>📞</Text>
             <Text style={styles.supportTitle}>Support</Text>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { SUPPORT_PHONE } from '@/lib/config';
+import { SUPPORT_WHATSAPP } from '@/lib/config';
 
 export default function AppHeader() {
   return (
@@ -21,7 +21,9 @@ export default function AppHeader() {
 
           {/* Quick Action Button */}
           <a
-            href={`tel:${SUPPORT_PHONE}`}
+            href={SUPPORT_WHATSAPP}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center space-x-2 bg-accent-400 hover:bg-accent-500 text-white px-4 py-2 rounded-lg transition-colors duration-200 shadow-md"
           >
             <span className="text-lg">📞</span>

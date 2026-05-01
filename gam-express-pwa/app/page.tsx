@@ -24,6 +24,7 @@ type TrackingResult =
 export default function HomePage() {
   const [trackingId, setTrackingId] = useState('');
   const [trackingResult, setTrackingResult] = useState<TrackingResult>(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
 
   // Mock features data
   const features: Feature[] = [
@@ -71,31 +72,36 @@ export default function HomePage() {
   const handleTrackBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     setTrackingResult(null);
+    setTrackingLoading(true);
 
     const bookingRef = trackingId.trim().toUpperCase();
-    if (!bookingRef) return;
+    if (!bookingRef) { setTrackingLoading(false); return; }
 
-    const response = await fetch(`/api/bookings?reference=${encodeURIComponent(bookingRef)}`);
-    const bookingData = await response.json();
+    try {
+      const response = await fetch(`/api/bookings?reference=${encodeURIComponent(bookingRef)}`);
+      const bookingData = await response.json();
 
-    if (!response.ok || bookingData.error) {
-      setTrackingResult({ error: 'Booking not found. Please check your reference ID.' });
-      return;
+      if (!response.ok || bookingData.error) {
+        setTrackingResult({ error: 'Booking not found. Please check your reference number.' });
+        return;
+      }
+
+      const result: TrackingResult = {
+        id: bookingData.id,
+        status: bookingData.status,
+        pickupLocation: bookingData.pickup_address ?? 'Unknown pickup',
+        dropoffLocation: bookingData.dropoff_address ?? 'Unknown drop-off',
+      };
+
+      if (bookingData.driver?.full_name) {
+        result.driverName = bookingData.driver.full_name;
+        result.vehicleNumber = bookingData.driver.vehicle_plate;
+      }
+
+      setTrackingResult(result);
+    } finally {
+      setTrackingLoading(false);
     }
-
-    const result: TrackingResult = {
-      id: bookingData.booking_reference,
-      status: bookingData.status,
-      pickupLocation: bookingData.pickup_address ?? 'Unknown pickup',
-      dropoffLocation: bookingData.dropoff_address ?? 'Unknown drop-off',
-    };
-
-    if (bookingData.driver?.full_name) {
-      result.driverName = bookingData.driver.full_name;
-      result.vehicleNumber = bookingData.driver.vehicle_plate;
-    }
-
-    setTrackingResult(result);
   };
 
   return (
@@ -181,8 +187,8 @@ export default function HomePage() {
                 />
               </div>
 
-              <button type="submit" className="btn-primary w-full">
-                Track Booking
+              <button type="submit" disabled={trackingLoading} className="btn-primary w-full disabled:opacity-60">
+                {trackingLoading ? 'Searching...' : 'Track Booking'}
               </button>
             </form>
 
@@ -195,10 +201,14 @@ export default function HomePage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded">
-                      <p className="text-green-800 font-semibold">
-                        ✓ Booking Found: {trackingResult.id}
-                      </p>
+                    <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded flex items-center justify-between gap-3">
+                      <p className="text-green-800 font-semibold">✓ Booking Found</p>
+                      <Link
+                        href={`/confirmation?id=${trackingResult.id}`}
+                        className="text-sm font-bold bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        View →
+                      </Link>
                     </div>
 
                     <div className="space-y-3">
