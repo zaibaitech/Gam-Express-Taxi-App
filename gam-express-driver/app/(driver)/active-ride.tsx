@@ -218,6 +218,9 @@ export default function ActiveRideScreen() {
       {/* Status header */}
       <View style={styles.statusHeader}>
         <Text style={styles.statusHeaderText}>{statusLabels[activeBooking.status]}</Text>
+        {activeBooking.booking_reference && (
+          <Text style={styles.statusHeaderRef}>#{activeBooking.booking_reference}</Text>
+        )}
       </View>
 
       {/* Bottom info panel */}
@@ -405,6 +408,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Urbanist_700Bold',
     fontSize: 16,
     color: '#F5C518',
+    letterSpacing: 0.5,
+  },
+  statusHeaderRef: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
     letterSpacing: 0.5,
   },
   panel: {

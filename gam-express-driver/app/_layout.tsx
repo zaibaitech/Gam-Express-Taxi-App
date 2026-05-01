@@ -21,7 +21,20 @@ export default function RootLayout() {
 
   const setDriver = useDriverStore((s) => s.setDriver);
   const setIncomingBooking = useDriverStore((s) => s.setIncomingBooking);
+  const setActiveBooking = useDriverStore((s) => s.setActiveBooking);
   const [authReady, setAuthReady] = useState(false);
+
+  async function restoreActiveBooking(userId: string) {
+    const { data } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('driver_id', userId)
+      .in('status', ['accepted', 'en_route', 'arrived'])
+      .order('driver_accepted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) setActiveBooking(data as Booking);
+  }
 
   async function loadDriver(userId: string) {
     const { data, error } = await supabase
@@ -34,6 +47,7 @@ export default function RootLayout() {
       registerPushToken(userId).catch((err) => {
         console.error('[Notifications] registerPushToken failed', err);
       });
+      await restoreActiveBooking(userId);
     } else if (error) {
       console.error('[Drivers] Query error:', error);
     }
