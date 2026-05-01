@@ -7,7 +7,19 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+async function verifyAdmin(req: NextRequest) {
+  const token = req.headers.get('authorization')?.replace('Bearer ', '');
+  if (!token) return null;
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token);
+  if (!user) return null;
+  const { data } = await supabaseAdmin.from('admins').select('id').eq('id', user.id).single();
+  return data ? user : null;
+}
+
 export async function POST(req: NextRequest) {
+  const caller = await verifyAdmin(req);
+  if (!caller) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+
   try {
     const { email, password, full_name, phone, vehicle_plate, vehicle_model } = await req.json();
 

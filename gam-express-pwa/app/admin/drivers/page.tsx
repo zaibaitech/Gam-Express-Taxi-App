@@ -59,10 +59,13 @@ export default function AdminDriversPage() {
     try {
       const email = phoneToEmail(form.phone);
 
-      // Call our server-side API route (uses service role key — bypasses RLS)
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/admin/create-driver', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token ?? ''}`,
+        },
         body: JSON.stringify({
           email,
           password: form.password,
