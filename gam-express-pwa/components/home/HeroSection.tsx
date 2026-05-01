@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@/lib/config';
 
 export default function HeroSection() {
   return (
@@ -50,8 +51,8 @@ export default function HeroSection() {
           {/* Secondary CTA */}
           <p className="mt-6 text-blue-100">
             Or call us at{' '}
-            <a href="tel:+2203456789" className="font-bold text-accent-300 hover:underline">
-              +220 345 6789
+            <a href={`tel:${SUPPORT_PHONE}`} className="font-bold text-accent-300 hover:underline">
+              {SUPPORT_PHONE_DISPLAY}
             </a>
           </p>
         </div>

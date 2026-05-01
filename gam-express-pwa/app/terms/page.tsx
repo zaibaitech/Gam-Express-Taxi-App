@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@/lib/config';
 
 export const metadata = { title: 'Terms of Service — Gam Express Taxi' };
 
@@ -55,7 +56,7 @@ export default function TermsPage() {
           <Section title="6. Driver Conduct">
             All Gam Express drivers are vetted and expected to maintain professional standards. If you experience unsafe
             or inappropriate behaviour, please contact our support team immediately at{' '}
-            <a href="tel:+2203456789" className="text-primary-600 underline">+220 345 6789</a>.
+            <a href={`tel:${SUPPORT_PHONE}`} className="text-primary-600 underline">{SUPPORT_PHONE_DISPLAY}</a>.
           </Section>
 
           <Section title="7. Limitation of Liability">
@@ -75,7 +76,7 @@ export default function TermsPage() {
 
           <Section title="10. Contact">
             Questions? Reach us at{' '}
-            <a href="tel:+2203456789" className="text-primary-600 underline">+220 345 6789</a>{' '}
+            <a href={`tel:${SUPPORT_PHONE}`} className="text-primary-600 underline">{SUPPORT_PHONE_DISPLAY}</a>{' '}
             or via WhatsApp at the same number.
           </Section>
         </div>

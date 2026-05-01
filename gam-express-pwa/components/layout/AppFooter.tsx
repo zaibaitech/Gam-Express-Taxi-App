@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { SUPPORT_PHONE_DISPLAY, SUPPORT_EMAIL, COMPANY_LOCATION } from '@/lib/config';
 
 export default function AppFooter() {
   return (
@@ -18,9 +19,9 @@ export default function AppFooter() {
           <div>
             <h4 className="text-white font-semibold mb-3">Contact Us</h4>
             <ul className="space-y-2 text-sm">
-              <li>📞 Phone: +220 345 6789</li>
-              <li>📧 Email: info@gamexpresstaxi.gm</li>
-              <li>📍 Location: Banjul, The Gambia</li>
+              <li>📞 Phone: {SUPPORT_PHONE_DISPLAY}</li>
+              <li>📧 Email: {SUPPORT_EMAIL}</li>
+              <li>📍 Location: {COMPANY_LOCATION}</li>
             </ul>
           </div>
 

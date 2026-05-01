@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@/lib/config';
 
 export default function NotFound() {
   return (
@@ -27,8 +28,8 @@ export default function NotFound() {
           <p className="text-gray-600 text-sm mb-4">
             If you believe this is an error, please contact our support team.
           </p>
-          <a href="tel:+2203456789" className="text-primary-600 hover:text-primary-800 font-semibold">
-            📞 Call +220 345 6789
+          <a href={`tel:${SUPPORT_PHONE}`} className="text-primary-600 hover:text-primary-800 font-semibold">
+            📞 Call {SUPPORT_PHONE_DISPLAY}
           </a>
         </div>
       </div>

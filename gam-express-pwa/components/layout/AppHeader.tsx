@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { SUPPORT_PHONE } from '@/lib/config';
 
 export default function AppHeader() {
   return (
@@ -19,8 +20,8 @@ export default function AppHeader() {
           </Link>
 
           {/* Quick Action Button */}
-          <a 
-            href="tel:+2203456789" 
+          <a
+            href={`tel:${SUPPORT_PHONE}`}
             className="flex items-center space-x-2 bg-accent-400 hover:bg-accent-500 text-white px-4 py-2 rounded-lg transition-colors duration-200 shadow-md"
           >
             <span className="text-lg">📞</span>

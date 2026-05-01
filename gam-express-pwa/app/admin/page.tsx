@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { formatCurrency } from '@/lib/utils';
 import type { Booking, Driver } from '@/lib/supabase';
 import Link from 'next/link';
 
@@ -120,7 +121,7 @@ export default function AdminDashboard() {
           { label: 'Completed Today', value: stats!.completed, color: 'text-green-400', icon: '✅' },
           { label: 'Cancelled Today', value: stats!.cancelled, color: 'text-red-400', icon: '❌' },
           { label: 'Drivers Online', value: stats!.onlineDrivers, color: 'text-purple-400', icon: '📍' },
-          { label: 'Earnings Today', value: `D ${stats!.earningsToday.toFixed(0)}`, color: 'text-yellow-300', icon: '💰' },
+          { label: 'Earnings Today', value: formatCurrency(stats!.earningsToday), color: 'text-yellow-300', icon: '💰' },
         ].map(s => (
           <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <div className="text-2xl mb-1">{s.icon}</div>
@@ -159,7 +160,7 @@ export default function AdminDashboard() {
                   </p>
                   <p className="text-xs text-gray-600 mt-0.5">
                     {formatDate(b.created_at)} {formatTime(b.created_at)}
-                    {b.estimated_fare ? ` · D ${b.estimated_fare}` : ''}
+                    {b.estimated_fare ? ` · ${formatCurrency(b.estimated_fare)}` : ''}
                   </p>
                 </div>
                 {['pending', 'accepted'].includes(b.status) && (

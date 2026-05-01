@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@/lib/config';
 
 export default function Error({
   error,
@@ -42,8 +43,8 @@ export default function Error({
           <p className="text-gray-600 text-sm mb-4">
             Contact our support team for immediate assistance.
           </p>
-          <a href="tel:+2203456789" className="text-primary-600 hover:text-primary-800 font-semibold">
-            📞 Call +220 345 6789
+          <a href={`tel:${SUPPORT_PHONE}`} className="text-primary-600 hover:text-primary-800 font-semibold">
+            📞 Call {SUPPORT_PHONE_DISPLAY}
           </a>
         </div>
 

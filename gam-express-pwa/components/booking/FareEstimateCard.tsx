@@ -1,4 +1,5 @@
 import { calculateFareEstimate, formatCurrency } from '@/lib/utils';
+import { PRICING } from '@/lib/config';
 
 interface FareEstimateCardProps {
   readonly fare: number;
@@ -62,15 +63,15 @@ export default function FareEstimateCard({ fare, pickup, dropoff }: FareEstimate
         <div className="mt-3 pt-3 border-t border-yellow-200 grid grid-cols-3 text-center text-xs text-gray-600 gap-2">
           <div>
             <p className="font-semibold text-gray-800">Base</p>
-            <p>GMD 250</p>
+            <p>GMD {PRICING.BASE_FARE}</p>
           </div>
           <div>
             <p className="font-semibold text-gray-800">Per km</p>
-            <p>GMD 60</p>
+            <p>GMD {PRICING.PER_KM}</p>
           </div>
           <div>
             <p className="font-semibold text-gray-800">Per min</p>
-            <p>GMD 10</p>
+            <p>GMD {PRICING.PER_MIN}</p>
           </div>
         </div>
       )}

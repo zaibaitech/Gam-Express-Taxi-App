@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { SUPPORT_PHONE } from '@/lib/config';
 import { formatCurrency } from '@/lib/utils';
 
 type LiveStatus = 'pending' | 'accepted' | 'en_route' | 'arrived' | 'completed' | 'cancelled';
@@ -192,7 +193,7 @@ export default function ConfirmationPage() {
           </div>
         </div>
         <a
-          href="tel:+2203456789"
+          href={`tel:${SUPPORT_PHONE}`}
           className="flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold text-sm px-4 py-2 rounded-full transition-colors"
         >
           📞 Support

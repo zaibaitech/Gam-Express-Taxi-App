@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@/lib/config';
 
 export const metadata = { title: 'Privacy Policy — Gam Express Taxi' };
 
@@ -56,7 +57,7 @@ export default function PrivacyPage() {
               <li>Request correction of inaccurate data.</li>
               <li>Request deletion of your data.</li>
             </ul>
-            Contact us at <a href="tel:+2203456789" className="text-primary-600 underline">+220 345 6789</a> to exercise these rights.
+            Contact us at <a href={`tel:${SUPPORT_PHONE}`} className="text-primary-600 underline">{SUPPORT_PHONE_DISPLAY}</a> to exercise these rights.
           </Section>
 
           <Section title="6. Security">
@@ -80,7 +81,7 @@ export default function PrivacyPage() {
 
           <Section title="10. Contact">
             For any privacy concerns, contact us at{' '}
-            <a href="tel:+2203456789" className="text-primary-600 underline">+220 345 6789</a>{' '}
+            <a href={`tel:${SUPPORT_PHONE}`} className="text-primary-600 underline">{SUPPORT_PHONE_DISPLAY}</a>{' '}
             or WhatsApp the same number.
           </Section>
         </div>

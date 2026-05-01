@@ -1,4 +1,5 @@
 // Utility functions for the taxi booking app
+import { PRICING } from '@/lib/config';
 
 // ---------------------------------------------------------------------------
 // Plus Code utilities
@@ -83,14 +84,6 @@ function decodePlusCode(code: string): { lat: number; lng: number } | null {
   return { lat: lat + latSize / 2, lng: lng + lngSize / 2 };
 }
 
-// ─── Pricing config (Gambian private-hire, Yango-style) ──────────────────────
-const PRICING = {
-  BASE_FARE:  250,   // GMD — covers driver showing up
-  PER_KM:      60,   // GMD per km
-  PER_MIN:     10,   // GMD per minute (avg city speed ~20 km/h)
-  MINIMUM:    400,   // GMD — no trip below this (Gambian private hire floor)
-  SURGE_PEAK: 1.3,   // 30 % uplift 07:00–09:00 and 17:00–19:30
-};
 
 /** Average speed assumption used to derive travel time from distance */
 const AVG_SPEED_KMH = 20;
