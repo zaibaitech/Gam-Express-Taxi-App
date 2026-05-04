@@ -68,10 +68,21 @@ export default function HomeScreen() {
     };
   }, [isOnline]);
 
-  // Load today's stats on mount
+  // Load today's stats and restore active booking on mount
   useEffect(() => {
     if (!driver) return;
     loadTodayStats();
+    // Restore active booking in case app was restarted mid-ride
+    supabase
+      .from('bookings')
+      .select('*')
+      .eq('driver_id', driver.id)
+      .in('status', ['accepted', 'en_route', 'arrived'])
+      .order('driver_accepted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setActiveBooking(data as Booking); })
+      .catch(() => {});
   }, [driver]);
 
   async function loadTodayStats() {

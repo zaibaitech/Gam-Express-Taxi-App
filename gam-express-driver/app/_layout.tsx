@@ -47,7 +47,9 @@ export default function RootLayout() {
       registerPushToken(userId).catch((err) => {
         console.error('[Notifications] registerPushToken failed', err);
       });
-      await restoreActiveBooking(userId);
+      restoreActiveBooking(userId).catch((err) => {
+        console.error('[Bookings] restoreActiveBooking failed', err);
+      });
     } else if (error) {
       console.error('[Drivers] Query error:', error);
     }
