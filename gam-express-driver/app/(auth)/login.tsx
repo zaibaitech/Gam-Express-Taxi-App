@@ -36,6 +36,10 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
+    const loginTimeout = setTimeout(() => {
+      setLoading(false);
+      Alert.alert('Connection timeout', 'Could not reach the server. Check your internet and try again.');
+    }, 10000);
     try {
       const email = phoneToEmail(trimmedPhone);
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -70,6 +74,7 @@ export default function LoginScreen() {
     } catch (err: any) {
       Alert.alert('Error', err?.message ?? 'Something went wrong. Please try again.');
     } finally {
+      clearTimeout(loginTimeout);
       setLoading(false);
     }
   }
