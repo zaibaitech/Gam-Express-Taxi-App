@@ -96,7 +96,11 @@ export default function ActiveRideScreen() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.error('[ActiveRide] Realtime subscription failed — cancellations will not be received');
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

@@ -34,25 +34,34 @@ export async function registerPushToken(driverId: string): Promise<void> {
     return;
   }
 
-  const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
-  if (!token) {
-    console.error('[Notifications] Expo push token was not returned');
+  try {
+    const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
+    if (!token) {
+      console.error('[Notifications] Expo push token was not returned');
+      return;
+    }
+
+    const { error } = await supabase.from('drivers').update({ push_token: token }).eq('id', driverId);
+    if (error) {
+      console.error('[Notifications] Failed to save push token for driver', error);
+    }
+  } catch (err) {
+    console.error('[Notifications] getExpoPushTokenAsync failed', err);
     return;
   }
 
-  const { error } = await supabase.from('drivers').update({ push_token: token }).eq('id', driverId);
-  if (error) {
-    console.error('[Notifications] Failed to save push token for driver', error);
-  }
-
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('ride-requests', {
-      name: 'Ride Requests',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 400, 200, 400],
-      sound: 'default',
-      enableLights: true,
-      lightColor: '#F5C518',
-    });
+    try {
+      await Notifications.setNotificationChannelAsync('ride-requests', {
+        name: 'Ride Requests',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 400, 200, 400],
+        sound: 'default',
+        enableLights: true,
+        lightColor: '#F5C518',
+      });
+    } catch (err) {
+      console.error('[Notifications] Failed to set notification channel', err);
+    }
   }
 }

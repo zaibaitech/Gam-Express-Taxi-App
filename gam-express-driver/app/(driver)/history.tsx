@@ -29,26 +29,33 @@ export default function HistoryScreen() {
     if (!driver) return;
     setLoading(true);
 
-    let query = supabase
-      .from('bookings')
-      .select('*')
-      .eq('driver_id', driver.id)
-      .eq('status', 'completed')
-      .order('completed_at', { ascending: false });
+    try {
+      let query = supabase
+        .from('bookings')
+        .select('*')
+        .eq('driver_id', driver.id)
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false });
 
-    if (filter === 'today') {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      query = query.gte('completed_at', today.toISOString());
-    } else if (filter === 'week') {
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      query = query.gte('completed_at', weekAgo.toISOString());
+      if (filter === 'today') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        query = query.gte('completed_at', today.toISOString());
+      } else if (filter === 'week') {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        query = query.gte('completed_at', weekAgo.toISOString());
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setTrips((data as Booking[]) ?? []);
+    } catch (err) {
+      console.error('[History] fetchTrips failed', err);
+      setTrips([]);
+    } finally {
+      setLoading(false);
     }
-
-    const { data } = await query;
-    setTrips((data as Booking[]) ?? []);
-    setLoading(false);
   }
 
   const totalEarnings = trips.reduce((sum, b) => sum + (b.estimated_fare ?? 0), 0);

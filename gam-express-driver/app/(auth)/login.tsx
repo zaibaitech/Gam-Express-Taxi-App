@@ -38,9 +38,19 @@ export default function LoginScreen() {
     setLoading(true);
     const loginTimeout = setTimeout(() => {
       setLoading(false);
-      Alert.alert('Connection timeout', 'Could not reach the server. Check your internet and try again.');
-    }, 10000);
+      Alert.alert('Server unreachable', 'The server took too long to respond. Your internet is working but the server may be temporarily down — try again in a moment.');
+    }, 20000);
     try {
+      // Quick connectivity probe before attempting auth
+      try {
+        await fetch('https://www.google.com', { method: 'HEAD' });
+      } catch {
+        clearTimeout(loginTimeout);
+        setLoading(false);
+        Alert.alert('No internet', 'Please check your mobile data or Wi-Fi and try again.');
+        return;
+      }
+
       const email = phoneToEmail(trimmedPhone);
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -72,7 +82,10 @@ export default function LoginScreen() {
       setDriver(driverData as Driver);
       router.replace('/(driver)/home');
     } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Something went wrong. Please try again.');
+      const msg = err?.name === 'AbortError' || err?.message?.includes('aborted')
+        ? 'Request timed out. Your internet is working but the server is slow — try again.'
+        : (err?.message ?? 'Something went wrong. Please try again.');
+      Alert.alert('Error', msg);
     } finally {
       clearTimeout(loginTimeout);
       setLoading(false);

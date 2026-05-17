@@ -60,17 +60,24 @@ export default function EarningsScreen() {
     if (!driver) return;
     setLoading(true);
 
-    const start = getStartDate(period);
-    const { data } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('driver_id', driver.id)
-      .eq('status', 'completed')
-      .gte('completed_at', start.toISOString())
-      .order('completed_at', { ascending: false });
+    try {
+      const start = getStartDate(period);
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('driver_id', driver.id)
+        .eq('status', 'completed')
+        .gte('completed_at', start.toISOString())
+        .order('completed_at', { ascending: false });
 
-    setTrips((data as Booking[]) ?? []);
-    setLoading(false);
+      if (error) throw error;
+      setTrips((data as Booking[]) ?? []);
+    } catch (err) {
+      console.error('[Earnings] fetchEarnings failed', err);
+      setTrips([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const totalEarnings = trips.reduce((sum, b) => sum + (b.estimated_fare ?? 0), 0);

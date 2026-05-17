@@ -81,8 +81,10 @@ export default function HomeScreen() {
       .order('driver_accepted_at', { ascending: false })
       .limit(1)
       .maybeSingle()
-      .then(({ data }) => { if (data) setActiveBooking(data as Booking); })
-      .catch(() => {});
+      .then(({ data, error }) => {
+        if (!error && data) setActiveBooking(data as Booking);
+      })
+      .catch((err) => console.error('[Home] restoreActiveBooking failed', err));
   }, [driver]);
 
   async function loadTodayStats() {
@@ -90,30 +92,34 @@ export default function HomeScreen() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const { data } = await supabase
-      .from('bookings')
-      .select('estimated_fare')
-      .eq('driver_id', driver.id)
-      .eq('status', 'completed')
-      .gte('completed_at', today.toISOString());
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('estimated_fare')
+        .eq('driver_id', driver.id)
+        .eq('status', 'completed')
+        .gte('completed_at', today.toISOString());
 
-    if (data) {
-      const total = data.reduce((sum: number, b: { estimated_fare: number | null }) => sum + (b.estimated_fare ?? 0), 0);
-      setEarningsToday(total);
-      setTripsToday(data.length);
-    }
+      if (!error && data) {
+        const total = data.reduce((sum: number, b: { estimated_fare: number | null }) => sum + (b.estimated_fare ?? 0), 0);
+        setEarningsToday(total);
+        setTripsToday(data.length);
+      }
 
-    // Load average rating from all completed trips with a rating
-    const { data: ratingData } = await supabase
-      .from('bookings')
-      .select('rating')
-      .eq('driver_id', driver.id)
-      .eq('status', 'completed')
-      .not('rating', 'is', null);
+      // Load average rating from all completed trips with a rating
+      const { data: ratingData, error: ratingError } = await supabase
+        .from('bookings')
+        .select('rating')
+        .eq('driver_id', driver.id)
+        .eq('status', 'completed')
+        .not('rating', 'is', null);
 
-    if (ratingData && ratingData.length > 0) {
-      const avg = ratingData.reduce((sum: number, b: { rating: number | null }) => sum + (b.rating ?? 0), 0) / ratingData.length;
-      setRating(Math.round(avg * 10) / 10);
+      if (!ratingError && ratingData && ratingData.length > 0) {
+        const avg = ratingData.reduce((sum: number, b: { rating: number | null }) => sum + (b.rating ?? 0), 0) / ratingData.length;
+        setRating(Math.round(avg * 10) / 10);
+      }
+    } catch (err) {
+      console.error('[Home] loadTodayStats failed', err);
     }
   }
 
@@ -139,7 +145,11 @@ export default function HomeScreen() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.error('[Home] Realtime subscription failed — driver will not receive new ride requests');
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

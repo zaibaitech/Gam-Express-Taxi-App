@@ -28,6 +28,15 @@ const ExpoSecureStoreAdapter = {
   removeItem: (key: string) => SecureStore.deleteItemAsync(key),
 };
 
+// Wraps fetch with a timeout so any Supabase HTTP call fails fast instead of hanging.
+function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  return fetch(input as RequestInfo, { ...init, signal: controller.signal }).finally(() =>
+    clearTimeout(timer),
+  );
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: ExpoSecureStoreAdapter,
@@ -36,8 +45,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
   global: {
-    // Force React Native's native fetch — prevents whatwg-fetch polyfill conflicts
-    fetch: fetch.bind(globalThis),
+    fetch: fetchWithTimeout,
   },
 });
 

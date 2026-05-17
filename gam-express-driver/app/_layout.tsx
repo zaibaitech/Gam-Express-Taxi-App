@@ -58,8 +58,8 @@ export default function RootLayout() {
   useEffect(() => {
     // Restore session on mount
     const initAuth = async () => {
-      // 5-second timeout so a network hang never leaves the app on a black screen
-      const timeout = setTimeout(() => setAuthReady(true), 5000);
+      // 12-second timeout so a network hang never leaves the app on a black screen
+      const timeout = setTimeout(() => setAuthReady(true), 12000);
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) {
@@ -104,24 +104,27 @@ export default function RootLayout() {
     const bookingId = response.notification.request.content.data?.bookingId as string | undefined;
     if (!bookingId) return;
 
-    const { data } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('id', bookingId)
-      .eq('status', 'pending')
-      .is('driver_id', null)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('id', bookingId)
+        .eq('status', 'pending')
+        .is('driver_id', null)
+        .single();
 
-    if (data) {
+      if (error || !data) return;
       setIncomingBooking(data as Booking);
       router.replace('/(driver)/home');
+    } catch {
+      // Notification tap failed silently — driver will still see home screen
     }
   }
 
   // Cold-launch: app was killed, user tapped the notification to open it
   const lastResponse = Notifications.useLastNotificationResponse();
   useEffect(() => {
-    if (lastResponse) handleNotificationResponse(lastResponse);
+    if (lastResponse) handleNotificationResponse(lastResponse).catch(() => {});
   }, [lastResponse]);
 
   useEffect(() => {

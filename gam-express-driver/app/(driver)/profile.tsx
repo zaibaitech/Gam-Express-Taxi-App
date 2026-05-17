@@ -77,9 +77,15 @@ export default function ProfileScreen() {
     setLoggingOut(true);
     try {
       if (isOnline && driver) {
-        await stopLocationBroadcast(driver.id);
+        // Best-effort — don't block logout if location update fails
+        await stopLocationBroadcast(driver.id).catch((err) =>
+          console.error('[Profile] stopLocationBroadcast failed during logout', err)
+        );
       }
-      await supabase.auth.signOut();
+      // Best-effort sign out — clear local state regardless of network result
+      await supabase.auth.signOut().catch((err) =>
+        console.error('[Profile] supabase.auth.signOut failed', err)
+      );
       reset();
       router.replace('/(auth)/login');
     } catch (err: any) {

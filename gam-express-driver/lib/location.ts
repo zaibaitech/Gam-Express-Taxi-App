@@ -44,13 +44,17 @@ export async function startLocationBroadcast(driverId: string): Promise<void> {
   // Broadcast to Supabase every 15 seconds to be gentle on bandwidth
   broadcastInterval = setInterval(async () => {
     if (!latestPosition) return;
-    await supabase
-      .from('drivers')
-      .update({
-        current_lat: latestPosition.lat,
-        current_lng: latestPosition.lng,
-      })
-      .eq('id', driverId);
+    try {
+      await supabase
+        .from('drivers')
+        .update({
+          current_lat: latestPosition.lat,
+          current_lng: latestPosition.lng,
+        })
+        .eq('id', driverId);
+    } catch (err) {
+      console.error('[Location] broadcast update failed', err);
+    }
   }, 15_000);
 }
 
@@ -68,10 +72,14 @@ export async function stopLocationBroadcast(driverId: string): Promise<void> {
 
   latestPosition = null;
 
-  await supabase
-    .from('drivers')
-    .update({ is_online: false, current_lat: null, current_lng: null })
-    .eq('id', driverId);
+  try {
+    await supabase
+      .from('drivers')
+      .update({ is_online: false, current_lat: null, current_lng: null })
+      .eq('id', driverId);
+  } catch (err) {
+    console.error('[Location] stopLocationBroadcast failed to mark driver offline', err);
+  }
 }
 
 /** Get the most recently cached position */
