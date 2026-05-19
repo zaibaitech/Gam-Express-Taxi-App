@@ -58,8 +58,10 @@ export default function RootLayout() {
   useEffect(() => {
     // Restore session on mount
     const initAuth = async () => {
-      // 12-second timeout so a network hang never leaves the app on a black screen
-      const timeout = setTimeout(() => setAuthReady(true), 12000);
+      // 5-second timeout so a network hang never leaves the app on a black screen.
+      // getSession() reads from SecureStore (fast). loadDriver() is one Supabase query.
+      // On a normal connection both complete in under 3s; 5s covers slow mobile data.
+      const timeout = setTimeout(() => setAuthReady(true), 5000);
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) {
